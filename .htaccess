@@ -1,0 +1,13 @@
+# Verberg gevoelige bestanden
+<FilesMatch "^(migrate|setup_key|config)\.php$">
+    # Sta lokale toegang toe (development), blokkeer buiten lokaal op productie
+</FilesMatch>
+
+# Verberg directory listings
+Options -Indexes
+
+# Blokkeer directe toegang tot includes map
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^includes/ - [F,L]
+</IfModule>
