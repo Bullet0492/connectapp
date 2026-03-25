@@ -179,6 +179,7 @@ require_once __DIR__ . '/../includes/header.php';
 <!-- ─── Tab: Overzicht ────────────────────────────────────────────────────── -->
 <?php if ($actieve_tab === 'overzicht'): ?>
 <div class="row g-3">
+    <!-- Contactinformatie -->
     <div class="col-md-6">
         <div class="bg-white rounded-3 border p-4">
             <h6 class="fw-bold mb-3">Contactinformatie</h6>
@@ -198,6 +199,8 @@ require_once __DIR__ . '/../includes/header.php';
             </table>
         </div>
     </div>
+
+    <!-- Samenvatting -->
     <div class="col-md-6">
         <div class="bg-white rounded-3 border p-4">
             <h6 class="fw-bold mb-3">Samenvatting</h6>
@@ -223,6 +226,93 @@ require_once __DIR__ . '/../includes/header.php';
         </div>
         <?php endif; ?>
     </div>
+
+    <!-- Microsoft 365 -->
+    <?php if ($o365): ?>
+    <div class="col-md-4">
+        <div class="bg-white rounded-3 border p-4 h-100">
+            <h6 class="fw-bold mb-3"><i class="ri-microsoft-line me-1 text-primary"></i> Microsoft 365</h6>
+            <?php if (!empty($o365['tenant_naam'])): ?>
+            <div class="text-muted small mb-2"><?= h($o365['tenant_naam']) ?></div>
+            <?php endif; ?>
+            <?php
+            $lic_overzicht = [];
+            foreach ($o365_gebruikers as $gu) {
+                if (!empty($gu['licentie_type'])) {
+                    $lic_overzicht[$gu['licentie_type']] = ($lic_overzicht[$gu['licentie_type']] ?? 0) + 1;
+                }
+            }
+            ?>
+            <?php if ($lic_overzicht): ?>
+            <div class="d-flex flex-column gap-1">
+                <?php foreach ($lic_overzicht as $type => $aantal): ?>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span style="font-size:12px;"><?= h($type) ?></span>
+                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25"><?= $aantal ?>x</span>
+                </div>
+                <?php endforeach; ?>
+            </div>
+            <?php else: ?>
+            <span class="text-muted small">Geen licenties ingesteld</span>
+            <?php endif; ?>
+            <div class="mt-2 small text-muted"><?= count($o365_gebruikers) ?> gebruiker<?= count($o365_gebruikers) !== 1 ? 's' : '' ?></div>
+        </div>
+    </div>
+    <?php endif; ?>
+
+    <!-- Telefonie -->
+    <?php
+    $ys_overzicht = !empty($yeastar_centralen) ? $yeastar_centralen[0] : null;
+    $heeft_tel_overzicht = $ys_overzicht || !empty($simpbx['actief']);
+    if ($heeft_tel_overzicht):
+    ?>
+    <div class="col-md-4">
+        <div class="bg-white rounded-3 border p-4 h-100">
+            <h6 class="fw-bold mb-3"><i class="ri-phone-line me-1 text-success"></i> Telefonie</h6>
+            <div class="d-flex flex-column gap-2">
+                <?php if ($ys_overzicht): ?>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-primary px-2 py-1">Yeastar</span>
+                    <?php if (!empty($ys_overzicht['admin_url'])): ?>
+                    <a href="<?= h($ys_overzicht['admin_url']) ?>" target="_blank" class="small text-muted"><i class="ri-external-link-line"></i></a>
+                    <?php endif; ?>
+                </div>
+                <?php endif; ?>
+                <?php if (!empty($simpbx['actief'])): ?>
+                <div>
+                    <span class="badge bg-success px-2 py-1">Simpbx</span>
+                </div>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
+
+    <!-- Internet -->
+    <?php if ($internet): ?>
+    <div class="col-md-4">
+        <div class="bg-white rounded-3 border p-4 h-100">
+            <h6 class="fw-bold mb-3"><i class="ri-wifi-line me-1 text-info"></i> Internet</h6>
+            <div class="fw-medium mb-1">
+                <?= $internet['provider'] === 'Anders' ? h($internet['provider_anders'] ?: 'Onbekend') : h($internet['provider']) ?>
+            </div>
+            <div class="d-flex flex-column gap-1">
+                <?php if (!empty($internet['type'])): ?>
+                <span class="text-muted small"><?= h($internet['type']) ?></span>
+                <?php endif; ?>
+                <?php if (!empty($internet['snelheid_down'])): ?>
+                <span class="text-muted small"><?= h($internet['snelheid_down']) ?> / <?= h($internet['snelheid_up']) ?> Mbit</span>
+                <?php endif; ?>
+                <?php if (!empty($internet['ip_adres'])): ?>
+                <span class="text-muted small"><code style="font-size:11px;"><?= h($internet['ip_adres']) ?></code></span>
+                <?php endif; ?>
+                <?php if (!empty($internet['backup_4g'])): ?>
+                <span class="badge bg-warning text-dark mt-1" style="width:fit-content;font-size:10px;"><i class="ri-signal-tower-line me-1"></i>4G backup</span>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
 </div>
 
 <!-- ─── Tab: Contacten ────────────────────────────────────────────────────── -->
