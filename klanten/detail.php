@@ -555,16 +555,17 @@ require_once __DIR__ . '/../includes/header.php';
 <?php if (empty($inloggegevens)): ?>
     <div class="bg-white rounded-3 border p-4 text-center text-muted">Nog geen inloggegevens.</div>
 <?php else:
-    $categorieen = ['netwerk' => [], 'server' => [], 'cloud' => [], 'portaal' => [], 'overig' => []];
+    $categorieen = [];
     foreach ($inloggegevens as $ig) {
-        $categorieen[$ig['categorie']][] = $ig;
+        $cat = $ig['categorie'] ?: 'overig';
+        $categorieen[$cat][] = $ig;
     }
-    $cat_labels = ['netwerk' => 'Netwerk / Router', 'server' => 'Server / Windows', 'cloud' => 'Cloud / SaaS', 'portaal' => 'Portalen', 'overig' => 'Overig'];
+    $cat_labels = ['router' => 'Router', 'netwerk' => 'Netwerk / Router', 'server' => 'Server / Windows', 'cloud' => 'Cloud / SaaS', 'portaal' => 'Portalen', 'overig' => 'Overig'];
     foreach ($categorieen as $cat => $items):
         if (empty($items)) continue;
 ?>
 <div class="mb-4">
-    <h6 class="text-muted fw-semibold mb-2" style="font-size:12px;text-transform:uppercase;letter-spacing:.8px;"><?= $cat_labels[$cat] ?></h6>
+    <h6 class="text-muted fw-semibold mb-2" style="font-size:12px;text-transform:uppercase;letter-spacing:.8px;"><?= h($cat_labels[$cat] ?? ucfirst($cat)) ?></h6>
     <div class="row g-2">
         <?php foreach ($items as $ig): ?>
         <div class="col-12 col-md-6">
@@ -642,13 +643,14 @@ require_once __DIR__ . '/../includes/header.php';
                         </div>
                         <div class="col-12">
                             <label class="form-label fw-medium">Categorie</label>
-                            <select name="categorie" id="ww_categorie" class="form-select rounded-3">
-                                <option value="netwerk">Netwerk / Router</option>
-                                <option value="server">Server / Windows</option>
-                                <option value="cloud">Cloud / SaaS</option>
-                                <option value="portaal">Portalen</option>
-                                <option value="overig">Overig</option>
+                            <select name="categorie" id="ww_categorie" class="form-select rounded-3" onchange="toggleWwCategorie()">
+                                <option value="router">Router</option>
+                                <option value="anders">Zelf invullen...</option>
                             </select>
+                        </div>
+                        <div class="col-12" id="ww_categorie_anders_veld" style="display:none;">
+                            <label class="form-label fw-medium">Omschrijving</label>
+                            <input type="text" name="categorie_anders" id="ww_categorie_anders" class="form-control rounded-3" placeholder="bijv. Firewall, Switch, NAS...">
                         </div>
                         <div class="col-12">
                             <label class="form-label fw-medium">Gebruikersnaam</label>
@@ -1640,7 +1642,16 @@ function bewerkWachtwoord(ig) {
     document.getElementById('wwModalTitel').textContent = 'Inloggegevens bewerken';
     document.getElementById('ig_id').value              = ig.id;
     document.getElementById('ww_label').value           = ig.label || '';
-    document.getElementById('ww_categorie').value       = ig.categorie || 'overig';
+    var vaste = ['router'];
+    var cat = ig.categorie || 'router';
+    if (vaste.includes(cat)) {
+        document.getElementById('ww_categorie').value = cat;
+        document.getElementById('ww_categorie_anders').value = '';
+    } else {
+        document.getElementById('ww_categorie').value = 'anders';
+        document.getElementById('ww_categorie_anders').value = cat;
+    }
+    toggleWwCategorie();
     document.getElementById('ww_gebruikersnaam').value  = ig.gebruikersnaam || '';
     document.getElementById('ww_wachtwoord').value      = '';
     document.getElementById('ww_url').value             = ig.url || '';
@@ -1708,6 +1719,20 @@ function toggleVeld(id, btn) {
     } else {
         inp.type = 'password';
         btn.querySelector('i').className = 'ri-eye-line';
+    }
+}
+
+// ─── Wachtwoord categorie toggle ─────────────────────────────────────────────
+function toggleWwCategorie() {
+    var sel = document.getElementById('ww_categorie');
+    var div = document.getElementById('ww_categorie_anders_veld');
+    var inp = document.getElementById('ww_categorie_anders');
+    if (sel.value === 'anders') {
+        div.style.display = 'block';
+        inp.required = true;
+    } else {
+        div.style.display = 'none';
+        inp.required = false;
     }
 }
 

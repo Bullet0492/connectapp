@@ -16,8 +16,12 @@ if (!$klant_id || !$label) {
     exit;
 }
 
-$ww_nieuw = $_POST['wachtwoord'] ?? '';
-$user = huidig_gebruiker();
+$ww_nieuw  = $_POST['wachtwoord'] ?? '';
+$user      = huidig_gebruiker();
+$categorie = trim($_POST['categorie'] ?? 'router');
+if ($categorie === 'anders') {
+    $categorie = trim($_POST['categorie_anders'] ?? 'overig') ?: 'overig';
+}
 
 if ($ig_id) {
     // Bewerken: wachtwoord alleen bijwerken als nieuw wachtwoord ingevuld
@@ -25,7 +29,7 @@ if ($ig_id) {
         $ww_enc = encrypt_wachtwoord($ww_nieuw);
         db()->prepare("UPDATE inloggegevens SET categorie=?, label=?, gebruikersnaam=?, wachtwoord_enc=?, url=?, notities=? WHERE id=? AND klant_id=?")
            ->execute([
-               $_POST['categorie'] ?? 'overig',
+               $categorie,
                $label,
                trim($_POST['gebruikersnaam'] ?? ''),
                $ww_enc,
@@ -37,7 +41,7 @@ if ($ig_id) {
     } else {
         db()->prepare("UPDATE inloggegevens SET categorie=?, label=?, gebruikersnaam=?, url=?, notities=? WHERE id=? AND klant_id=?")
            ->execute([
-               $_POST['categorie'] ?? 'overig',
+               $categorie,
                $label,
                trim($_POST['gebruikersnaam'] ?? ''),
                trim($_POST['url'] ?? ''),
@@ -54,7 +58,7 @@ if ($ig_id) {
         VALUES (?,?,?,?,?,?,?,?)")
        ->execute([
            $klant_id,
-           $_POST['categorie'] ?? 'overig',
+           $categorie,
            $label,
            trim($_POST['gebruikersnaam'] ?? ''),
            $ww_enc,
