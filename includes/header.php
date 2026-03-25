@@ -165,12 +165,6 @@ $base = basis_url();
                 Apparaten
             </a>
         </li>
-        <li>
-            <a href="<?= $base ?>/inloggegevens/index.php" class="<?= strpos($_SERVER['PHP_SELF'], '/inloggegevens/') !== false ? 'active' : '' ?>">
-                <i class="ri-key-2-line" style="font-size:17px;"></i>
-                Wachtwoordkluis
-            </a>
-        </li>
         <?php if ($gebruiker['rol'] === 'admin'): ?>
         <li style="padding: 10px 12px 2px; pointer-events:none;">
             <span style="font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:#adb5bd;">Beheer</span>
