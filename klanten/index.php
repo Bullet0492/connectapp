@@ -14,7 +14,7 @@ $per_pagina = 15;
 // POST: opslaan of bijwerken
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();
-    $velden = ['naam','bedrijf','adres','postcode','stad','telefoon','email','website','intra_id','notities'];
+    $velden = ['naam','bedrijf','adres','postcode','stad','telefoon','email','website','intra_id','notities','vps'];
     $data = [];
     foreach ($velden as $v) {
         $data[$v] = trim($_POST[$v] ?? '');
@@ -24,13 +24,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($data['naam'] !== '') {
         if ($bewerken_id) {
             $db->prepare("UPDATE klanten SET naam=:naam, bedrijf=:bedrijf, adres=:adres, postcode=:postcode,
-                stad=:stad, telefoon=:telefoon, email=:email, website=:website, intra_id=:intra_id, notities=:notities
+                stad=:stad, telefoon=:telefoon, email=:email, website=:website, intra_id=:intra_id, notities=:notities, vps=:vps
                 WHERE id=:id")->execute(array_merge($data, ['id' => $bewerken_id]));
             log_actie('klant_bijgewerkt', 'Naam: ' . $data['naam'] . ', ID: ' . $bewerken_id);
             flash_set('succes', 'Klant bijgewerkt.');
         } else {
-            $db->prepare("INSERT INTO klanten (naam,bedrijf,adres,postcode,stad,telefoon,email,website,intra_id,notities)
-                VALUES (:naam,:bedrijf,:adres,:postcode,:stad,:telefoon,:email,:website,:intra_id,:notities)")
+            $db->prepare("INSERT INTO klanten (naam,bedrijf,adres,postcode,stad,telefoon,email,website,intra_id,notities,vps)
+                VALUES (:naam,:bedrijf,:adres,:postcode,:stad,:telefoon,:email,:website,:intra_id,:notities,:vps)")
                 ->execute($data);
             log_actie('klant_aangemaakt', 'Naam: ' . $data['naam']);
             flash_set('succes', 'Klant aangemaakt.');
@@ -254,6 +254,17 @@ function klant_pagina_url(int $p): string {
                             <input type="text" name="intra_id" class="form-control rounded-3" placeholder="Intelly ID"
                                    value="<?= $bewerken_klant ? h($bewerken_klant['intra_id'] ?? '') : '' ?>">
                         </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-medium">VPS</label>
+                            <select name="vps" class="form-select rounded-3">
+                                <option value="">— Geen VPS —</option>
+                                <?php foreach (['vps1','vps2','vps3','vps4','vps5'] as $v): ?>
+                                <option value="<?= $v ?>.connect4it.hix.nl" <?= ($bewerken_klant ? ($bewerken_klant['vps'] ?? '') : '') === $v . '.connect4it.hix.nl' ? 'selected' : '' ?>>
+                                    <?= $v ?>.connect4it.hix.nl
+                                </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
                         <div class="col-12">
                             <label class="form-label fw-medium">Notities</label>
                             <textarea name="notities" class="form-control rounded-3" rows="3" placeholder="Extra info..."><?= $bewerken_klant ? h($bewerken_klant['notities'] ?? '') : '' ?></textarea>
@@ -295,7 +306,7 @@ document.getElementById('btn-nieuwe-klant').addEventListener('click', function()
     modal.querySelector('.modal-title').textContent = 'Nieuwe klant';
     var form = modal.querySelector('form');
     form.querySelector('[name="bewerken_id"]').value = '';
-    ['naam','bedrijf','email','telefoon','adres','postcode','stad','website','intra_id','notities'].forEach(function(f) {
+    ['naam','bedrijf','email','telefoon','adres','postcode','stad','website','intra_id','notities','vps'].forEach(function(f) {
         var el = form.querySelector('[name="' + f + '"]');
         if (el) el.value = '';
     });

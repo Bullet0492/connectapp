@@ -196,6 +196,9 @@ require_once __DIR__ . '/../includes/header.php';
                 <?php if (!empty($klant['intra_id'])): ?>
                 <tr><td class="text-muted">Intelly ID</td><td><?= h($klant['intra_id']) ?></td></tr>
                 <?php endif; ?>
+                <?php if (!empty($klant['vps'])): ?>
+                <tr><td class="text-muted">VPS</td><td><i class="ri-server-line me-1 text-muted"></i><?= h($klant['vps']) ?></td></tr>
+                <?php endif; ?>
             </table>
         </div>
     </div>
