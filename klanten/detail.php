@@ -1371,6 +1371,9 @@ $iconen = ['pdf' => 'ri-file-pdf-line', 'docx' => 'ri-file-word-line', 'doc' => 
         <?php if (!empty($internet['ip_adres'])): ?>
         <tr><td class="text-muted">Vast IP-adres</td><td><code><?= h($internet['ip_adres']) ?></code></td></tr>
         <?php endif; ?>
+        <?php if (!empty($internet['backup_4g'])): ?>
+        <tr><td class="text-muted">4G backup</td><td><span class="badge bg-success">Aanwezig</span></td></tr>
+        <?php endif; ?>
         <?php if (!empty($internet['contract_datum'])): ?>
         <tr><td class="text-muted">Contract tot</td><td><?= h(date('d-m-Y', strtotime($internet['contract_datum']))) ?></td></tr>
         <?php endif; ?>
@@ -1400,10 +1403,6 @@ $iconen = ['pdf' => 'ri-file-pdf-line', 'docx' => 'ri-file-word-line', 'doc' => 
                                 <option value="">Selecteer provider...</option>
                                 <option value="Routit" <?= ($internet['provider'] ?? '') === 'Routit' ? 'selected' : '' ?>>Routit</option>
                                 <option value="Pocos" <?= ($internet['provider'] ?? '') === 'Pocos' ? 'selected' : '' ?>>Pocos</option>
-                                <option value="KPN" <?= ($internet['provider'] ?? '') === 'KPN' ? 'selected' : '' ?>>KPN</option>
-                                <option value="Ziggo Zakelijk" <?= ($internet['provider'] ?? '') === 'Ziggo Zakelijk' ? 'selected' : '' ?>>Ziggo Zakelijk</option>
-                                <option value="T-Mobile" <?= ($internet['provider'] ?? '') === 'T-Mobile' ? 'selected' : '' ?>>T-Mobile</option>
-                                <option value="Colt" <?= ($internet['provider'] ?? '') === 'Colt' ? 'selected' : '' ?>>Colt</option>
                                 <option value="Anders" <?= ($internet['provider'] ?? '') === 'Anders' ? 'selected' : '' ?>>Anders (zelf invullen)</option>
                             </select>
                         </div>
@@ -1415,7 +1414,7 @@ $iconen = ['pdf' => 'ri-file-pdf-line', 'docx' => 'ri-file-word-line', 'doc' => 
                             <label class="form-label fw-medium">Type verbinding</label>
                             <select name="type" class="form-select rounded-3">
                                 <option value="">Onbekend</option>
-                                <?php foreach (['Glasvezel','DSL/VDSL','Coax/HFC','4G/LTE','5G','Lease line','Overig'] as $t): ?>
+                                <?php foreach (['Glasvezel','ADSL','VDSL'] as $t): ?>
                                 <option value="<?= h($t) ?>" <?= ($internet['type'] ?? '') === $t ? 'selected' : '' ?>><?= h($t) ?></option>
                                 <?php endforeach; ?>
                             </select>
@@ -1427,6 +1426,12 @@ $iconen = ['pdf' => 'ri-file-pdf-line', 'docx' => 'ri-file-word-line', 'doc' => 
                         <div class="col-6 col-md-3">
                             <label class="form-label fw-medium">Up (Mbit)</label>
                             <input type="text" name="snelheid_up" class="form-control rounded-3" placeholder="20" value="<?= h($internet['snelheid_up'] ?? '') ?>">
+                        </div>
+                        <div class="col-12">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="backup_4g" id="int_4g" <?= !empty($internet['backup_4g']) ? 'checked' : '' ?>>
+                                <label class="form-check-label fw-medium" for="int_4g">4G backup aanwezig</label>
+                            </div>
                         </div>
                         <div class="col-12">
                             <label class="form-label fw-medium">Vast IP-adres</label>
