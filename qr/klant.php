@@ -188,7 +188,7 @@ $base = basis_url();
 <?php endif; ?>
 
 <div class="text-center text-muted py-4" style="font-size:.75rem;">
-    connect4it.nl &middot; Klanten App
+    connect4it.nl &middot; Connect App
 </div>
 
 </body>

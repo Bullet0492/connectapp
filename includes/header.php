@@ -10,7 +10,7 @@ $base = basis_url();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title><?= isset($paginatitel) ? h($paginatitel) . ' - ' : '' ?>Klanten App</title>
+    <title><?= isset($paginatitel) ? h($paginatitel) . ' - ' : '' ?>Connect App</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link href="https://cdn.jsdelivr.net/npm/remixicon@4.3.0/fonts/remixicon.css" rel="stylesheet">
     <style>
