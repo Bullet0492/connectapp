@@ -20,6 +20,8 @@ Options -Indexes
     Deny from all
 </FilesMatch>
 
+# migrate5/6/7 tijdelijk toegankelijk voor uitvoeren migraties
+
 # ─── Security headers ────────────────────────────────────────────────────────
 <IfModule mod_headers.c>
     # Klik-jacking voorkomen

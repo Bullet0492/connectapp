@@ -50,6 +50,17 @@ $o365 = $db->prepare('SELECT * FROM klant_o365 WHERE klant_id = ?');
 $o365->execute([$id]);
 $o365 = $o365->fetch() ?: null;
 
+$o365_licenties = [];
+$o365_gebruikers = [];
+try {
+    $q = $db->prepare('SELECT * FROM klant_o365_licenties WHERE klant_id = ? ORDER BY id');
+    $q->execute([$id]);
+    $o365_licenties = $q->fetchAll();
+    $q = $db->prepare('SELECT * FROM klant_o365_gebruikers WHERE klant_id = ? ORDER BY naam');
+    $q->execute([$id]);
+    $o365_gebruikers = $q->fetchAll();
+} catch (Exception $e) { /* tabellen nog niet aangemaakt */ }
+
 // Yeastar centralen
 $yeastar_centralen = $db->prepare('SELECT * FROM klant_yeastar WHERE klant_id = ? ORDER BY id DESC');
 $yeastar_centralen->execute([$id]);
@@ -934,18 +945,24 @@ $iconen = ['pdf' => 'ri-file-pdf-line', 'docx' => 'ri-file-word-line', 'doc' => 
 
 <!-- ─── Tab: Office 365 ───────────────────────────────────────────────────── -->
 <?php elseif ($actieve_tab === 'o365'): ?>
+<!-- Tenant -->
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h6 class="fw-bold mb-0">Microsoft Office 365</h6>
-    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalO365">
-        <?= $o365 ? '<i class="ri-edit-line"></i> Bewerken' : '+ Toevoegen' ?>
-    </button>
+    <div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#modalO365Licentie" onclick="resetLicentieModal()">+ Licentie</button>
+        <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#modalO365Gebruiker" onclick="resetGebruikerModal()">+ Gebruiker</button>
+        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalO365">
+            <?= $o365 ? '<i class="ri-edit-line"></i> Tenant' : '+ Toevoegen' ?>
+        </button>
+    </div>
 </div>
 <?php if (!$o365): ?>
     <div class="bg-white rounded-3 border p-4 text-center text-muted">Nog geen Office 365 gegevens.</div>
 <?php else: ?>
 <div class="row g-3">
+    <!-- Tenant info -->
     <div class="col-md-6">
-        <div class="bg-white rounded-3 border p-4">
+        <div class="bg-white rounded-3 border p-4 h-100">
             <h6 class="fw-semibold mb-3">Tenant</h6>
             <table class="table table-sm table-borderless mb-0">
                 <?php if (!empty($o365['tenant_naam'])): ?>
@@ -954,57 +971,109 @@ $iconen = ['pdf' => 'ri-file-pdf-line', 'docx' => 'ri-file-word-line', 'doc' => 
                 <?php if (!empty($o365['tenant_id'])): ?>
                 <tr><td class="text-muted">Tenant ID</td><td><code style="font-size:11px;"><?= h($o365['tenant_id']) ?></code></td></tr>
                 <?php endif; ?>
-                <?php if (!empty($o365['licentie_type'])): ?>
-                <tr><td class="text-muted">Licentie</td><td><?= h($o365['licentie_type']) ?></td></tr>
-                <?php endif; ?>
-                <?php if ($o365['aantal_licenties']): ?>
-                <tr><td class="text-muted">Aantal</td><td><?= (int)$o365['aantal_licenties'] ?> licenties</td></tr>
-                <?php endif; ?>
-                <tr><td class="text-muted">MFA</td><td><?= $o365['mfa_actief'] ? '<span class="badge bg-success">Ingeschakeld</span>' : '<span class="badge bg-secondary">Uitgeschakeld</span>' ?></td></tr>
-                <tr><td class="text-muted">Conditional Access</td><td><?= $o365['conditional_access'] ? '<span class="badge bg-success">Actief</span>' : '<span class="badge bg-secondary">Niet actief</span>' ?></td></tr>
             </table>
+            <?php if (!empty($o365['notities'])): ?>
+            <p class="mb-0 text-muted small mt-2" style="white-space:pre-line;"><?= h($o365['notities']) ?></p>
+            <?php endif; ?>
         </div>
     </div>
+    <!-- Beheerder -->
     <div class="col-md-6">
-        <div class="bg-white rounded-3 border p-4">
+        <div class="bg-white rounded-3 border p-4 h-100">
             <h6 class="fw-semibold mb-3">Beheerdersaccount</h6>
             <?php if (!empty($o365['admin_email'])): ?>
             <div class="d-flex align-items-center gap-2 mb-2">
                 <span class="text-muted" style="font-size:12px;min-width:90px;">E-mail</span>
                 <code style="font-size:12px;"><?= h($o365['admin_email']) ?></code>
-                <button class="btn btn-sm p-0 text-muted" onclick="kopieer('<?= h($o365['admin_email']) ?>', this)" title="Kopiëren"><i class="ri-file-copy-line" style="font-size:14px;"></i></button>
+                <button class="btn btn-sm p-0 text-muted" onclick="kopieer('<?= h($o365['admin_email']) ?>', this)"><i class="ri-file-copy-line" style="font-size:14px;"></i></button>
             </div>
             <?php endif; ?>
             <?php if (!empty($o365['admin_wachtwoord_enc'])): ?>
             <div class="d-flex align-items-center gap-2 mb-2">
                 <span class="text-muted" style="font-size:12px;min-width:90px;">Wachtwoord</span>
                 <code class="flex-grow-1 ww-tekst" data-id="o365_<?= $id ?>" style="font-size:12px;">••••••••</code>
-                <button class="btn btn-sm p-0 text-muted" onclick="toggleO365Ww(<?= $id ?>, this)" title="Tonen"><i class="ri-eye-line" style="font-size:14px;"></i></button>
-                <button class="btn btn-sm p-0 text-muted" onclick="kopieerO365Ww(<?= $id ?>, this)" title="Kopiëren"><i class="ri-file-copy-line" style="font-size:14px;"></i></button>
+                <button class="btn btn-sm p-0 text-muted" onclick="toggleO365Ww(<?= $id ?>, this)"><i class="ri-eye-line" style="font-size:14px;"></i></button>
+                <button class="btn btn-sm p-0 text-muted" onclick="kopieerO365Ww(<?= $id ?>, this)"><i class="ri-file-copy-line" style="font-size:14px;"></i></button>
             </div>
             <?php endif; ?>
             <a href="https://admin.microsoft.com" target="_blank" class="btn btn-sm btn-outline-secondary mt-2">
-                <i class="ri-external-link-line"></i> Microsoft Admin Center
+                <i class="ri-external-link-line"></i> Admin Center
             </a>
         </div>
     </div>
-    <?php if (!empty($o365['notities'])): ?>
-    <div class="col-12">
-        <div class="bg-white rounded-3 border p-4">
-            <h6 class="fw-semibold mb-2">Notities</h6>
-            <p class="mb-0 text-muted small" style="white-space:pre-line;"><?= h($o365['notities']) ?></p>
+    <!-- Licenties -->
+    <div class="col-md-6">
+        <div class="bg-white rounded-3 border p-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="fw-semibold mb-0">Licenties</h6>
+                <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modalO365Licentie" onclick="resetLicentieModal()"><i class="ri-add-line"></i></button>
+            </div>
+            <?php if (empty($o365_licenties)): ?>
+            <p class="text-muted small mb-0">Nog geen licenties.</p>
+            <?php else: ?>
+            <table class="table table-sm table-borderless mb-0">
+                <?php foreach ($o365_licenties as $lic): ?>
+                <tr>
+                    <td style="font-size:13px;"><?= h($lic['licentie_type']) ?></td>
+                    <td class="text-muted" style="font-size:13px;width:50px;"><?= (int)$lic['aantal'] ?>x</td>
+                    <td class="text-end" style="width:60px;">
+                        <button class="btn btn-sm p-0 text-muted me-1" onclick="bewerkLicentie(<?= htmlspecialchars(json_encode($lic), ENT_QUOTES) ?>)"><i class="ri-edit-line" style="font-size:13px;"></i></button>
+                        <?php if ($gebruiker['rol'] === 'admin'): ?>
+                        <a href="<?= $base ?>/o365/licentie_verwijderen.php?id=<?= $lic['id'] ?>&klant_id=<?= $id ?>" onclick="return confirm('Verwijderen?')" class="btn btn-sm p-0 text-danger"><i class="ri-delete-bin-line" style="font-size:13px;"></i></a>
+                        <?php endif; ?>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+            </table>
+            <?php endif; ?>
         </div>
     </div>
-    <?php endif; ?>
+    <!-- Gebruikers -->
+    <div class="col-md-6">
+        <div class="bg-white rounded-3 border p-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="fw-semibold mb-0">Gebruikers</h6>
+                <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modalO365Gebruiker" onclick="resetGebruikerModal()"><i class="ri-add-line"></i></button>
+            </div>
+            <?php if (empty($o365_gebruikers)): ?>
+            <p class="text-muted small mb-0">Nog geen gebruikers.</p>
+            <?php else: ?>
+            <?php foreach ($o365_gebruikers as $gu): ?>
+            <div class="d-flex align-items-start gap-2 py-2 border-bottom">
+                <div class="flex-grow-1" style="min-width:0;">
+                    <div class="fw-medium" style="font-size:13px;"><?= h($gu['naam']) ?></div>
+                    <div class="text-muted" style="font-size:12px;"><?= h($gu['email']) ?></div>
+                    <?php if (!empty($gu['rol'])): ?><span class="badge bg-light text-muted border" style="font-size:10px;"><?= h($gu['rol']) ?></span><?php endif; ?>
+                </div>
+                <div class="d-flex flex-column gap-1 flex-shrink-0">
+                    <?php if (!empty($gu['wachtwoord_enc'])): ?>
+                    <div class="d-flex align-items-center gap-1">
+                        <code class="ww-tekst" data-id="o365g_<?= $gu['id'] ?>" style="font-size:11px;">••••••</code>
+                        <button class="btn btn-sm p-0 text-muted" onclick="toggleO365GWw(<?= $gu['id'] ?>, this)"><i class="ri-eye-line" style="font-size:13px;"></i></button>
+                        <button class="btn btn-sm p-0 text-muted" onclick="kopieerO365GWw(<?= $gu['id'] ?>, this)"><i class="ri-file-copy-line" style="font-size:13px;"></i></button>
+                    </div>
+                    <?php endif; ?>
+                    <div class="d-flex gap-1">
+                        <button class="btn btn-sm p-0 text-muted" onclick="bewerkGebruiker(<?= htmlspecialchars(json_encode($gu), ENT_QUOTES) ?>)"><i class="ri-edit-line" style="font-size:13px;"></i></button>
+                        <?php if ($gebruiker['rol'] === 'admin'): ?>
+                        <a href="<?= $base ?>/o365/gebruiker_verwijderen.php?id=<?= $gu['id'] ?>&klant_id=<?= $id ?>" onclick="return confirm('Verwijderen?')" class="btn btn-sm p-0 text-danger"><i class="ri-delete-bin-line" style="font-size:13px;"></i></a>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+            <?php endforeach; ?>
+            <?php endif; ?>
+        </div>
+    </div>
 </div>
 <?php endif; ?>
 
-<!-- Modal O365 -->
+<!-- Modal Tenant -->
 <div class="modal fade" id="modalO365" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog">
         <div class="modal-content rounded-3 border-0 shadow">
             <div class="modal-header border-0 pb-0 px-4 pt-4">
-                <h5 class="modal-title fw-bold">Office 365 gegevens</h5>
+                <h5 class="modal-title fw-bold">Office 365 tenant</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body p-4">
@@ -1012,51 +1081,130 @@ $iconen = ['pdf' => 'ri-file-pdf-line', 'docx' => 'ri-file-word-line', 'doc' => 
                     <?= csrf_field() ?>
                     <input type="hidden" name="klant_id" value="<?= $id ?>">
                     <div class="row g-3">
-                        <div class="col-12 col-md-6">
+                        <div class="col-12">
                             <label class="form-label fw-medium">Tenant naam</label>
                             <input type="text" name="tenant_naam" class="form-control rounded-3" placeholder="bedrijf.onmicrosoft.com" value="<?= h($o365['tenant_naam'] ?? '') ?>">
                         </div>
-                        <div class="col-12 col-md-6">
+                        <div class="col-12">
                             <label class="form-label fw-medium">Tenant ID</label>
                             <input type="text" name="tenant_id" class="form-control rounded-3 font-monospace" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" value="<?= h($o365['tenant_id'] ?? '') ?>">
                         </div>
-                        <div class="col-12 col-md-6">
+                        <div class="col-12">
                             <label class="form-label fw-medium">Beheerder e-mail</label>
                             <input type="email" name="admin_email" class="form-control rounded-3" placeholder="admin@bedrijf.nl" value="<?= h($o365['admin_email'] ?? '') ?>">
                         </div>
-                        <div class="col-12 col-md-6">
+                        <div class="col-12">
                             <label class="form-label fw-medium">Beheerder wachtwoord</label>
                             <div class="input-group">
                                 <input type="password" name="admin_wachtwoord" id="o365_ww" class="form-control rounded-start-3" placeholder="<?= $o365 ? 'Laat leeg om ongewijzigd te laten' : '' ?>" autocomplete="new-password">
                                 <button type="button" class="btn btn-outline-secondary" onclick="toggleVeld('o365_ww', this)"><i class="ri-eye-line"></i></button>
                             </div>
                         </div>
-                        <div class="col-12 col-md-6">
-                            <label class="form-label fw-medium">Licentie type</label>
-                            <select name="licentie_type" class="form-select rounded-3">
-                                <option value="">Selecteer...</option>
-                                <?php foreach (['Microsoft 365 Business Basic','Microsoft 365 Business Standard','Microsoft 365 Business Premium','Microsoft 365 E3','Microsoft 365 E5','Office 365 E1','Office 365 E3','Overig'] as $lt): ?>
-                                <option value="<?= h($lt) ?>" <?= ($o365['licentie_type'] ?? '') === $lt ? 'selected' : '' ?>><?= h($lt) ?></option>
-                                <?php endforeach; ?>
-                            </select>
+                        <div class="col-12">
+                            <label class="form-label fw-medium">Notities</label>
+                            <textarea name="notities" class="form-control rounded-3" rows="2"><?= h($o365['notities'] ?? '') ?></textarea>
                         </div>
-                        <div class="col-12 col-md-6">
-                            <label class="form-label fw-medium">Aantal licenties</label>
-                            <input type="number" name="aantal_licenties" class="form-control rounded-3" min="0" value="<?= (int)($o365['aantal_licenties'] ?? 0) ?>">
+                    </div>
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="button" class="btn btn-outline-secondary flex-grow-1 rounded-3" data-bs-dismiss="modal">Annuleren</button>
+                        <button type="submit" class="btn btn-primary flex-grow-1 rounded-3">Opslaan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Licentie -->
+<div class="modal fade" id="modalO365Licentie" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content rounded-3 border-0 shadow">
+            <div class="modal-header border-0 pb-0 px-4 pt-4">
+                <h5 class="modal-title fw-bold" id="licentieModalTitel">Licentie toevoegen</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form method="post" action="<?= $base ?>/o365/licentie_opslaan.php">
+                    <?= csrf_field() ?>
+                    <input type="hidden" name="klant_id" value="<?= $id ?>">
+                    <input type="hidden" name="licentie_id" id="lic_id" value="">
+                    <div class="mb-3">
+                        <label class="form-label fw-medium">Type</label>
+                        <select name="licentie_type" id="lic_type" class="form-select rounded-3">
+                            <?php foreach ([
+                                'Microsoft 365 Business Basic',
+                                'Microsoft 365 Business Standard',
+                                'Microsoft 365 Business Premium',
+                                'Microsoft 365 E3',
+                                'Microsoft 365 E5',
+                                'Office 365 E1',
+                                'Office 365 E3',
+                                'Exchange Online Plan 1',
+                                'Exchange Online Plan 2',
+                                'Microsoft Teams Essentials',
+                                'Overig',
+                            ] as $lt): ?>
+                            <option value="<?= h($lt) ?>"><?= h($lt) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-medium">Aantal</label>
+                        <input type="number" name="aantal" id="lic_aantal" class="form-control rounded-3" min="1" value="1">
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-secondary flex-grow-1 rounded-3" data-bs-dismiss="modal">Annuleren</button>
+                        <button type="submit" class="btn btn-primary flex-grow-1 rounded-3">Opslaan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Gebruiker -->
+<div class="modal fade" id="modalO365Gebruiker" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content rounded-3 border-0 shadow">
+            <div class="modal-header border-0 pb-0 px-4 pt-4">
+                <h5 class="modal-title fw-bold" id="gebruikerModalTitel">Gebruiker toevoegen</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form method="post" action="<?= $base ?>/o365/gebruiker_opslaan.php">
+                    <?= csrf_field() ?>
+                    <input type="hidden" name="klant_id" value="<?= $id ?>">
+                    <input type="hidden" name="gebruiker_id" id="gu_id" value="">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label fw-medium">Naam</label>
+                            <input type="text" name="naam" id="gu_naam" class="form-control rounded-3" placeholder="Jan de Vries">
                         </div>
-                        <div class="col-12 col-md-6">
-                            <div class="form-check form-switch mt-2">
-                                <input class="form-check-input" type="checkbox" name="mfa_actief" id="o365_mfa" <?= !empty($o365['mfa_actief']) ? 'checked' : '' ?>>
-                                <label class="form-check-label" for="o365_mfa">MFA ingeschakeld</label>
-                            </div>
-                            <div class="form-check form-switch mt-1">
-                                <input class="form-check-input" type="checkbox" name="conditional_access" id="o365_ca" <?= !empty($o365['conditional_access']) ? 'checked' : '' ?>>
-                                <label class="form-check-label" for="o365_ca">Conditional Access actief</label>
+                        <div class="col-12">
+                            <label class="form-label fw-medium">E-mailadres</label>
+                            <input type="text" name="email" id="gu_email" class="form-control rounded-3" placeholder="jan@bedrijf.nl">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-medium">Wachtwoord</label>
+                            <div class="input-group">
+                                <input type="password" name="wachtwoord" id="gu_ww" class="form-control rounded-start-3" placeholder="Laat leeg om ongewijzigd te laten" autocomplete="new-password">
+                                <button type="button" class="btn btn-outline-secondary" onclick="toggleVeld('gu_ww', this)"><i class="ri-eye-line"></i></button>
                             </div>
                         </div>
                         <div class="col-12">
+                            <label class="form-label fw-medium">Rol</label>
+                            <select name="rol" id="gu_rol" class="form-select rounded-3">
+                                <option value="Gebruiker">Gebruiker</option>
+                                <option value="Globale beheerder">Globale beheerder</option>
+                                <option value="Gebruikersbeheerder">Gebruikersbeheerder</option>
+                                <option value="Factureringsbeheerder">Factureringsbeheerder</option>
+                                <option value="Helpdesk beheerder">Helpdesk beheerder</option>
+                                <option value="Overig">Overig</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
                             <label class="form-label fw-medium">Notities</label>
-                            <textarea name="notities" class="form-control rounded-3" rows="3"><?= h($o365['notities'] ?? '') ?></textarea>
+                            <textarea name="notities" id="gu_notities" class="form-control rounded-3" rows="2"></textarea>
                         </div>
                     </div>
                     <div class="d-flex gap-2 mt-4">
@@ -1626,6 +1774,82 @@ function bewerkYeastar(ys) {
     document.getElementById('ys_firmware').value = ys.firmware || '';
     document.getElementById('ys_notities').value = ys.notities || '';
     new bootstrap.Modal(document.getElementById('modalYeastar')).show();
+}
+
+// ─── O365 licentie modal ─────────────────────────────────────────────────────
+function resetLicentieModal() {
+    document.getElementById('licentieModalTitel').textContent = 'Licentie toevoegen';
+    document.getElementById('lic_id').value = '';
+    document.getElementById('lic_aantal').value = 1;
+}
+function bewerkLicentie(lic) {
+    document.getElementById('licentieModalTitel').textContent = 'Licentie bewerken';
+    document.getElementById('lic_id').value    = lic.id;
+    document.getElementById('lic_type').value  = lic.licentie_type || '';
+    document.getElementById('lic_aantal').value= lic.aantal || 1;
+    new bootstrap.Modal(document.getElementById('modalO365Licentie')).show();
+}
+
+// ─── O365 gebruiker modal ─────────────────────────────────────────────────────
+function resetGebruikerModal() {
+    document.getElementById('gebruikerModalTitel').textContent = 'Gebruiker toevoegen';
+    document.getElementById('gu_id').value       = '';
+    document.getElementById('gu_naam').value     = '';
+    document.getElementById('gu_email').value    = '';
+    document.getElementById('gu_ww').value       = '';
+    document.getElementById('gu_rol').value      = 'Gebruiker';
+    document.getElementById('gu_notities').value = '';
+}
+function bewerkGebruiker(gu) {
+    document.getElementById('gebruikerModalTitel').textContent = 'Gebruiker bewerken';
+    document.getElementById('gu_id').value       = gu.id;
+    document.getElementById('gu_naam').value     = gu.naam || '';
+    document.getElementById('gu_email').value    = gu.email || '';
+    document.getElementById('gu_ww').value       = '';
+    document.getElementById('gu_rol').value      = gu.rol || 'Gebruiker';
+    document.getElementById('gu_notities').value = gu.notities || '';
+    new bootstrap.Modal(document.getElementById('modalO365Gebruiker')).show();
+}
+
+// ─── O365 gebruiker wachtwoord tonen/kopiëren ─────────────────────────────────
+var o365gCache = {};
+function toggleO365GWw(id, btn) {
+    var span = document.querySelector('.ww-tekst[data-id="o365g_' + id + '"]');
+    if (!span) return;
+    if (span.dataset.zichtbaar === '1') {
+        span.textContent = '••••••';
+        span.dataset.zichtbaar = '0';
+        btn.querySelector('i').className = 'ri-eye-line';
+        return;
+    }
+    if (o365gCache[id]) {
+        span.textContent = o365gCache[id];
+        span.dataset.zichtbaar = '1';
+        btn.querySelector('i').className = 'ri-eye-off-line';
+        return;
+    }
+    fetch('<?= $base ?>/o365/gebruiker_toon.php?id=' + id + '&csrf=<?= h(csrf_token()) ?>')
+        .then(r => r.json())
+        .then(data => {
+            if (data.ww) {
+                o365gCache[id] = data.ww;
+                span.textContent = data.ww;
+                span.dataset.zichtbaar = '1';
+                btn.querySelector('i').className = 'ri-eye-off-line';
+            }
+        });
+}
+function kopieerO365GWw(id, btn) {
+    var doCopy = function(ww) {
+        navigator.clipboard.writeText(ww);
+        var i = btn.querySelector('i');
+        i.className = 'ri-check-line';
+        setTimeout(() => i.className = 'ri-file-copy-line', 1500);
+    };
+    if (o365gCache[id]) { doCopy(o365gCache[id]); return; }
+    fetch('<?= $base ?>/o365/gebruiker_toon.php?id=' + id + '&csrf=<?= h(csrf_token()) ?>')
+        .then(r => r.json())
+        .then(data => { if (data.ww) { o365gCache[id] = data.ww; doCopy(data.ww); } });
 }
 
 // ─── O365 wachtwoord tonen/kopiëren ──────────────────────────────────────────
