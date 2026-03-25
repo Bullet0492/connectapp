@@ -216,7 +216,12 @@ function handleResult(tekst) {
     setStatus('✓ QR-code gevonden!');
     var match = tekst.match(/[?&]id=(\d+)/);
     if (match) {
-        window.location.href = '<?= $base ?>/klanten/detail.php?id=' + match[1];
+        var id = match[1];
+        if (tekst.indexOf('/qr/apparaat.php') !== -1) {
+            window.location.href = '<?= $base ?>/qr/apparaat.php?id=' + id;
+        } else {
+            window.location.href = '<?= $base ?>/klanten/detail.php?id=' + id;
+        }
     } else {
         setStatus('Onbekende QR-code. Opnieuw scannen...', true);
         setTimeout(function() {

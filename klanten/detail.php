@@ -418,9 +418,17 @@ require_once __DIR__ . '/../includes/header.php';
         <div class="bg-white rounded-3 border p-3">
             <div class="d-flex justify-content-between align-items-start mb-2">
                 <div>
-                    <span class="badge badge-<?= $a['status'] ?> rounded-pill" style="font-size:10px;"><?= h($a['status']) ?></span>
+                    <?php if (!empty($a['qr_code'])): ?>
+                    <span class="text-muted small fw-medium"><?= h($a['qr_code']) ?></span>
+                    <?php endif; ?>
+                    <span class="badge badge-<?= $a['status'] ?> rounded-pill ms-1" style="font-size:10px;"><?= h($a['status']) ?></span>
                 </div>
                 <div class="d-flex gap-1">
+                    <?php if (!empty($a['qr_code'])): ?>
+                    <a href="<?= $base ?>/qr/label_apparaat.php?id=<?= $a['id'] ?>" class="btn btn-sm btn-outline-secondary" target="_blank" title="QR-label">
+                        <i class="ri-qr-code-line"></i>
+                    </a>
+                    <?php endif; ?>
                     <button class="btn btn-sm btn-outline-secondary" onclick="bewerkApparaat(<?= htmlspecialchars(json_encode($a), ENT_QUOTES) ?>)">
                         <i class="ri-edit-line"></i>
                     </button>

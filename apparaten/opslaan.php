@@ -43,10 +43,11 @@ if ($apparaat_id) {
     log_actie('apparaat_bijgewerkt', 'Apparaat ID: ' . $apparaat_id . ', Klant ID: ' . $klant_id);
     flash_set('succes', 'Apparaat bijgewerkt.');
 } else {
-    db()->prepare("INSERT INTO apparaten (klant_id,type,merk,model,serienummer,aanschafdatum,garantie_tot,locatie,mac_adres,ip_adres,firmware,status,notities)
-        VALUES (:klant_id,:type,:merk,:model,:serienummer,:aanschafdatum,:garantie_tot,:locatie,:mac_adres,:ip_adres,:firmware,:status,:notities)")
+    $data['qr_code'] = volgende_qr_nummer();
+    db()->prepare("INSERT INTO apparaten (klant_id,qr_code,type,merk,model,serienummer,aanschafdatum,garantie_tot,locatie,mac_adres,ip_adres,firmware,status,notities)
+        VALUES (:klant_id,:qr_code,:type,:merk,:model,:serienummer,:aanschafdatum,:garantie_tot,:locatie,:mac_adres,:ip_adres,:firmware,:status,:notities)")
        ->execute($data);
-    log_actie('apparaat_aangemaakt', 'Klant ID: ' . $klant_id);
+    log_actie('apparaat_aangemaakt', 'QR: ' . $data['qr_code'] . ', Klant ID: ' . $klant_id);
     flash_set('succes', 'Apparaat toegevoegd.');
 }
 
