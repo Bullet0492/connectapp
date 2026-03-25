@@ -141,18 +141,12 @@ $base = basis_url();
 
 <div class="sidebar" id="sidebar">
     <div class="sidebar-logo">
-        <a href="<?= $base ?>/index.php" class="d-flex align-items-center gap-2 text-decoration-none">
+        <a href="<?= $base ?>/klanten/index.php" class="d-flex align-items-center gap-2 text-decoration-none">
             <img src="<?= $base ?>/images/logo.png" alt="Connect4IT" onerror="this.style.display='none'">
             <span style="font-size:16px;font-weight:700;color:#185E9B;letter-spacing:.3px;">Connect4IT</span>
         </a>
     </div>
     <ul class="sidebar-nav">
-        <li>
-            <a href="<?= $base ?>/index.php" class="<?= basename($_SERVER['PHP_SELF']) === 'index.php' && strpos($_SERVER['PHP_SELF'], '/klanten/') === false && strpos($_SERVER['PHP_SELF'], '/apparaten/') === false ? 'active' : '' ?>">
-                <i class="ri-dashboard-line" style="font-size:17px;"></i>
-                Dashboard
-            </a>
-        </li>
         <li>
             <a href="<?= $base ?>/klanten/index.php" class="<?= strpos($_SERVER['PHP_SELF'], '/klanten/') !== false ? 'active' : '' ?>">
                 <i class="ri-building-2-line" style="font-size:17px;"></i>
