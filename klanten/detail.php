@@ -272,15 +272,17 @@ require_once __DIR__ . '/../includes/header.php';
             <div class="d-flex flex-column gap-2">
                 <?php if ($ys_overzicht): ?>
                 <div class="d-flex align-items-center gap-2">
-                    <span class="badge bg-primary px-2 py-1">Yeastar</span>
+                    <i class="ri-base-station-line text-primary"></i>
+                    <span class="fw-medium small">Yeastar</span>
                     <?php if (!empty($ys_overzicht['admin_url'])): ?>
-                    <a href="<?= h($ys_overzicht['admin_url']) ?>" target="_blank" class="small text-muted"><i class="ri-external-link-line"></i></a>
+                    <a href="<?= h($ys_overzicht['admin_url']) ?>" target="_blank" class="small text-muted ms-1"><i class="ri-external-link-line"></i></a>
                     <?php endif; ?>
                 </div>
                 <?php endif; ?>
                 <?php if (!empty($simpbx['actief'])): ?>
-                <div>
-                    <span class="badge bg-success px-2 py-1">Simpbx</span>
+                <div class="d-flex align-items-center gap-2">
+                    <i class="ri-phone-line text-success"></i>
+                    <span class="fw-medium small">Simpbx</span>
                 </div>
                 <?php endif; ?>
             </div>
@@ -1350,7 +1352,7 @@ $iconen = ['pdf' => 'ri-file-pdf-line', 'docx' => 'ri-file-word-line', 'doc' => 
 
 <?php if ($ys): ?>
 <div class="bg-white rounded-3 border p-4 mb-3" style="max-width:500px;">
-    <div class="mb-3"><span class="badge bg-primary px-3 py-2" style="font-size:13px;"><i class="ri-base-station-line me-1"></i> Yeastar</span></div>
+    <h6 class="fw-bold mb-3"><i class="ri-base-station-line me-1 text-primary"></i> Yeastar</h6>
     <?php if (!empty($ys['admin_url'])): ?>
     <div class="d-flex align-items-center gap-2 mb-2">
         <span class="text-muted" style="font-size:12px;min-width:90px;">Link</span>
@@ -1378,8 +1380,8 @@ $iconen = ['pdf' => 'ri-file-pdf-line', 'docx' => 'ri-file-word-line', 'doc' => 
 
 <?php if (!empty($simpbx['actief'])): ?>
 <div class="bg-white rounded-3 border p-4" style="max-width:500px;">
-    <span class="badge bg-success px-3 py-2" style="font-size:13px;"><i class="ri-phone-line me-1"></i> Simpbx</span>
-    <p class="text-muted small mt-3 mb-0">Klant maakt gebruik van onze eigen Simpbx telefooncentrale.</p>
+    <h6 class="fw-bold mb-3"><i class="ri-phone-line me-1 text-success"></i> Simpbx</h6>
+    <p class="text-muted small mb-0">Klant maakt gebruik van onze eigen Simpbx telefooncentrale.</p>
 </div>
 <?php endif; ?>
 
