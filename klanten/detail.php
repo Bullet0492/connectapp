@@ -162,10 +162,10 @@ require_once __DIR__ . '/../includes/header.php';
         </a>
     </li>
     <li class="nav-item">
-        <?php $tel_count = count($yeastar_centralen) + (!empty($simpbx['actief']) ? 1 : 0); ?>
+        <?php $heeft_telefonie = !empty($yeastar_centralen) || !empty($simpbx['actief']); ?>
         <a class="nav-link <?= $actieve_tab === 'telefonie' ? 'active' : '' ?>" href="?id=<?= $id ?>&tab=telefonie">
             <i class="ri-phone-line"></i> Telefonie
-            <?php if ($tel_count): ?><span class="badge bg-secondary ms-1" style="font-size:10px;"><?= $tel_count ?></span><?php endif; ?>
+            <?php if ($heeft_telefonie): ?><span class="badge bg-success ms-1" style="font-size:10px;">&#10003;</span><?php endif; ?>
         </a>
     </li>
     <li class="nav-item">
@@ -1240,253 +1240,104 @@ $iconen = ['pdf' => 'ri-file-pdf-line', 'docx' => 'ri-file-word-line', 'doc' => 
 </div>
 
 <!-- ─── Tab: Telefonie ────────────────────────────────────────────────────── -->
-<?php elseif ($actieve_tab === 'telefonie'): ?>
-
-<!-- Yeastar sectie -->
+<?php elseif ($actieve_tab === 'telefonie'):
+    $ys = !empty($yeastar_centralen) ? $yeastar_centralen[0] : null;
+    $tel_type = $ys ? 'yeastar' : (!empty($simpbx['actief']) ? 'simpbx' : 'geen');
+?>
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h6 class="fw-bold mb-0"><i class="ri-base-station-line me-1"></i> Yeastar centralen</h6>
-    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalYeastar" onclick="resetYeastarModal()">+ Toevoegen</button>
-</div>
-<?php if (empty($yeastar_centralen)): ?>
-    <div class="bg-white rounded-3 border p-4 text-center text-muted mb-4">Geen Yeastar centralen.</div>
-<?php else: ?>
-<div class="row g-3 mb-4">
-    <?php foreach ($yeastar_centralen as $ys): ?>
-    <div class="col-md-6">
-        <div class="bg-white rounded-3 border p-3">
-            <div class="d-flex justify-content-between align-items-start mb-2">
-                <div class="fw-semibold"><?= h($ys['model'] ?: 'Yeastar centrale') ?></div>
-                <div class="d-flex gap-1">
-                    <button class="btn btn-sm btn-outline-secondary" onclick="bewerkYeastar(<?= htmlspecialchars(json_encode($ys), ENT_QUOTES) ?>)"><i class="ri-edit-line"></i></button>
-                    <?php if ($gebruiker['rol'] === 'admin'): ?>
-                    <a href="<?= $base ?>/yeastar/verwijderen.php?id=<?= $ys['id'] ?>&klant_id=<?= $id ?>" class="btn btn-sm btn-outline-danger" onclick="return confirm('Centrale verwijderen?')"><i class="ri-delete-bin-line"></i></a>
-                    <?php endif; ?>
-                </div>
-            </div>
-            <?php if (!empty($ys['ip_adres'])): ?>
-            <div class="d-flex align-items-center gap-2 mb-1">
-                <span class="text-muted" style="font-size:12px;min-width:90px;">IP-adres</span>
-                <code style="font-size:12px;"><?= h($ys['ip_adres']) ?><?= !empty($ys['poort']) && $ys['poort'] !== '80' ? ':' . h($ys['poort']) : '' ?></code>
-                <?php if (!empty($ys['admin_url'])): ?>
-                <a href="<?= h($ys['admin_url']) ?>" target="_blank" class="btn btn-sm p-0 text-muted ms-1" title="Beheerpaneel openen"><i class="ri-external-link-line" style="font-size:14px;"></i></a>
-                <?php endif; ?>
-            </div>
-            <?php elseif (!empty($ys['admin_url'])): ?>
-            <div class="d-flex align-items-center gap-2 mb-1">
-                <span class="text-muted" style="font-size:12px;min-width:90px;">Beheerpaneel</span>
-                <a href="<?= h($ys['admin_url']) ?>" target="_blank" class="small"><?= h($ys['admin_url']) ?> <i class="ri-external-link-line"></i></a>
-            </div>
-            <?php endif; ?>
-            <?php if (!empty($ys['admin_gebruiker'])): ?>
-            <div class="d-flex align-items-center gap-2 mb-1">
-                <span class="text-muted" style="font-size:12px;min-width:90px;">Gebruiker</span>
-                <code style="font-size:12px;"><?= h($ys['admin_gebruiker']) ?></code>
-                <button class="btn btn-sm p-0 text-muted" onclick="kopieer('<?= h($ys['admin_gebruiker']) ?>', this)"><i class="ri-file-copy-line" style="font-size:14px;"></i></button>
-            </div>
-            <?php endif; ?>
-            <?php if (!empty($ys['admin_wachtwoord_enc'])): ?>
-            <div class="d-flex align-items-center gap-2 mb-1">
-                <span class="text-muted" style="font-size:12px;min-width:90px;">Wachtwoord</span>
-                <code class="flex-grow-1 ww-tekst" data-id="ys_<?= $ys['id'] ?>" style="font-size:12px;">••••••••</code>
-                <button class="btn btn-sm p-0 text-muted" onclick="toggleYsWw(<?= $ys['id'] ?>, this)"><i class="ri-eye-line" style="font-size:14px;"></i></button>
-                <button class="btn btn-sm p-0 text-muted" onclick="kopieerYsWw(<?= $ys['id'] ?>, this)"><i class="ri-file-copy-line" style="font-size:14px;"></i></button>
-            </div>
-            <?php endif; ?>
-            <?php if (!empty($ys['firmware'])): ?>
-            <div class="small text-muted mt-1"><i class="ri-code-s-slash-line"></i> Firmware: <?= h($ys['firmware']) ?></div>
-            <?php endif; ?>
-            <?php if (!empty($ys['notities'])): ?>
-            <div class="small text-muted mt-1" style="white-space:pre-line;"><?= h($ys['notities']) ?></div>
-            <?php endif; ?>
-        </div>
-    </div>
-    <?php endforeach; ?>
-</div>
-<?php endif; ?>
-
-<hr class="my-4">
-
-<!-- Simpbx sectie -->
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <div>
-        <h6 class="fw-bold mb-0"><i class="ri-phone-line me-1"></i> Simpbx telefooncentrale</h6>
-        <small class="text-muted">Onze eigen hosted PBX-oplossing</small>
-    </div>
-    <button class="btn btn-<?= !empty($simpbx['actief']) ? 'outline-secondary' : 'primary' ?> btn-sm" data-bs-toggle="modal" data-bs-target="#modalSimpbx">
-        <?= $simpbx ? '<i class="ri-edit-line"></i> Bewerken' : '+ Configureren' ?>
+    <h6 class="fw-bold mb-0"><i class="ri-phone-line me-1"></i> Telefonie</h6>
+    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalTelefonie">
+        <?= $tel_type !== 'geen' ? '<i class="ri-edit-line"></i> Bewerken' : '+ Instellen' ?>
     </button>
 </div>
-<?php if (!$simpbx || empty($simpbx['actief'])): ?>
-    <div class="bg-white rounded-3 border p-4 text-center text-muted">
-        <i class="ri-phone-off-line" style="font-size:28px;"></i>
-        <div class="mt-2">Klant gebruikt geen Simpbx.</div>
-        <?php if ($simpbx): ?><div class="small mt-1"><a href="#" data-bs-toggle="modal" data-bs-target="#modalSimpbx">Inschakelen</a></div><?php endif; ?>
-    </div>
-<?php else: ?>
-<div class="bg-white rounded-3 border p-4">
-    <div class="d-flex align-items-center gap-2 mb-3">
-        <span class="badge bg-success">Actief</span>
-        <?php if ($simpbx['aantal_extensies']): ?><span class="text-muted small"><?= (int)$simpbx['aantal_extensies'] ?> extensies</span><?php endif; ?>
-    </div>
-    <?php if (!empty($simpbx['sip_domein'])): ?>
+
+<?php if ($tel_type === 'geen'): ?>
+<div class="bg-white rounded-3 border p-4 text-center text-muted">
+    <i class="ri-phone-off-line" style="font-size:28px;"></i>
+    <div class="mt-2">Geen telefonie ingesteld.</div>
+</div>
+
+<?php elseif ($tel_type === 'yeastar'): ?>
+<div class="bg-white rounded-3 border p-4" style="max-width:500px;">
+    <div class="mb-3"><span class="badge bg-primary px-3 py-2" style="font-size:13px;"><i class="ri-base-station-line me-1"></i> Yeastar</span></div>
+    <?php if (!empty($ys['admin_url'])): ?>
     <div class="d-flex align-items-center gap-2 mb-2">
-        <span class="text-muted" style="font-size:12px;min-width:90px;">SIP domein</span>
-        <code style="font-size:12px;"><?= h($simpbx['sip_domein']) ?></code>
-        <button class="btn btn-sm p-0 text-muted" onclick="kopieer('<?= h($simpbx['sip_domein']) ?>', this)"><i class="ri-file-copy-line" style="font-size:14px;"></i></button>
+        <span class="text-muted" style="font-size:12px;min-width:90px;">Link</span>
+        <a href="<?= h($ys['admin_url']) ?>" target="_blank" class="small text-truncate"><?= h($ys['admin_url']) ?></a>
+        <a href="<?= h($ys['admin_url']) ?>" target="_blank" class="btn btn-sm p-0 text-muted flex-shrink-0"><i class="ri-external-link-line" style="font-size:14px;"></i></a>
     </div>
     <?php endif; ?>
-    <?php if (!empty($simpbx['admin_url'])): ?>
-    <div class="d-flex align-items-center gap-2 mb-2">
-        <span class="text-muted" style="font-size:12px;min-width:90px;">Beheerpaneel</span>
-        <a href="<?= h($simpbx['admin_url']) ?>" target="_blank" class="small"><?= h($simpbx['admin_url']) ?> <i class="ri-external-link-line"></i></a>
-    </div>
-    <?php endif; ?>
-    <?php if (!empty($simpbx['admin_gebruiker'])): ?>
+    <?php if (!empty($ys['admin_gebruiker'])): ?>
     <div class="d-flex align-items-center gap-2 mb-2">
         <span class="text-muted" style="font-size:12px;min-width:90px;">Gebruiker</span>
-        <code style="font-size:12px;"><?= h($simpbx['admin_gebruiker']) ?></code>
-        <button class="btn btn-sm p-0 text-muted" onclick="kopieer('<?= h($simpbx['admin_gebruiker']) ?>', this)"><i class="ri-file-copy-line" style="font-size:14px;"></i></button>
+        <code style="font-size:12px;"><?= h($ys['admin_gebruiker']) ?></code>
+        <button class="btn btn-sm p-0 text-muted" onclick="kopieer('<?= h($ys['admin_gebruiker']) ?>', this)"><i class="ri-file-copy-line" style="font-size:14px;"></i></button>
     </div>
     <?php endif; ?>
-    <?php if (!empty($simpbx['admin_wachtwoord_enc'])): ?>
+    <?php if (!empty($ys['admin_wachtwoord_enc'])): ?>
     <div class="d-flex align-items-center gap-2 mb-2">
         <span class="text-muted" style="font-size:12px;min-width:90px;">Wachtwoord</span>
-        <code class="flex-grow-1 ww-tekst" data-id="sbx_<?= $id ?>" style="font-size:12px;">••••••••</code>
-        <button class="btn btn-sm p-0 text-muted" onclick="toggleSbxWw(<?= $id ?>, this)"><i class="ri-eye-line" style="font-size:14px;"></i></button>
-        <button class="btn btn-sm p-0 text-muted" onclick="kopieerSbxWw(<?= $id ?>, this)"><i class="ri-file-copy-line" style="font-size:14px;"></i></button>
+        <code class="flex-grow-1 ww-tekst" data-id="ys_<?= $ys['id'] ?>" style="font-size:12px;">••••••••</code>
+        <button class="btn btn-sm p-0 text-muted" onclick="toggleYsWw(<?= $ys['id'] ?>, this)"><i class="ri-eye-line" style="font-size:14px;"></i></button>
+        <button class="btn btn-sm p-0 text-muted" onclick="kopieerYsWw(<?= $ys['id'] ?>, this)"><i class="ri-file-copy-line" style="font-size:14px;"></i></button>
     </div>
     <?php endif; ?>
-    <?php if (!empty($simpbx['notities'])): ?>
-    <div class="small text-muted mt-2" style="white-space:pre-line;"><?= h($simpbx['notities']) ?></div>
-    <?php endif; ?>
+</div>
+
+<?php elseif ($tel_type === 'simpbx'): ?>
+<div class="bg-white rounded-3 border p-4" style="max-width:500px;">
+    <span class="badge bg-success px-3 py-2" style="font-size:13px;"><i class="ri-phone-line me-1"></i> Simpbx</span>
+    <p class="text-muted small mt-3 mb-0">Klant maakt gebruik van onze eigen Simpbx telefooncentrale.</p>
 </div>
 <?php endif; ?>
 
-<!-- Modal Yeastar -->
-<div class="modal fade" id="modalYeastar" tabindex="-1">
+<!-- Modal Telefonie -->
+<div class="modal fade" id="modalTelefonie" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content rounded-3 border-0 shadow">
             <div class="modal-header border-0 pb-0 px-4 pt-4">
-                <h5 class="modal-title fw-bold" id="yeastarModalTitel">Yeastar centrale toevoegen</h5>
+                <h5 class="modal-title fw-bold">Telefonie instellen</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body p-4">
-                <form method="post" action="<?= $base ?>/yeastar/opslaan.php">
+                <form method="post" action="<?= $base ?>/telefonie/opslaan.php">
                     <?= csrf_field() ?>
                     <input type="hidden" name="klant_id" value="<?= $id ?>">
-                    <input type="hidden" name="yeastar_id" id="yeastar_id" value="">
-                    <div class="row g-3">
-                        <div class="col-12">
-                            <label class="form-label fw-medium">Model</label>
-                            <select name="model" id="ys_model" class="form-select rounded-3">
-                                <option value="">Selecteer model...</option>
-                                <optgroup label="P-Series">
-                                    <option value="P-Series P520">P-Series P520</option>
-                                    <option value="P-Series P560">P-Series P560</option>
-                                    <option value="P-Series P570">P-Series P570</option>
-                                </optgroup>
-                                <optgroup label="S-Series">
-                                    <option value="S-Series S100">S-Series S100</option>
-                                    <option value="S-Series S300">S-Series S300</option>
-                                </optgroup>
-                                <optgroup label="T-Series">
-                                    <option value="T-Series T30">T-Series T30</option>
-                                    <option value="T-Series T46">T-Series T46</option>
-                                </optgroup>
-                                <option value="Cloud PBX">Cloud PBX</option>
-                                <option value="Overig">Overig</option>
-                            </select>
+                    <div class="mb-3">
+                        <label class="form-label fw-medium">Type</label>
+                        <div class="d-flex gap-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="type" id="tel_geen" value="geen" <?= $tel_type === 'geen' ? 'checked' : '' ?> onchange="toggleTelType()">
+                                <label class="form-check-label" for="tel_geen">Geen</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="type" id="tel_yeastar" value="yeastar" <?= $tel_type === 'yeastar' ? 'checked' : '' ?> onchange="toggleTelType()">
+                                <label class="form-check-label" for="tel_yeastar">Yeastar</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="type" id="tel_simpbx" value="simpbx" <?= $tel_type === 'simpbx' ? 'checked' : '' ?> onchange="toggleTelType()">
+                                <label class="form-check-label" for="tel_simpbx">Simpbx</label>
+                            </div>
                         </div>
-                        <div class="col-12 col-md-8">
-                            <label class="form-label fw-medium">IP-adres</label>
-                            <input type="text" name="ip_adres" id="ys_ip" class="form-control rounded-3" placeholder="192.168.1.100">
+                    </div>
+                    <div id="tel_yeastar_velden" style="display:<?= $tel_type === 'yeastar' ? 'block' : 'none' ?>;">
+                        <div class="mb-3">
+                            <label class="form-label fw-medium">Link (beheer URL)</label>
+                            <input type="text" name="admin_url" class="form-control rounded-3" placeholder="https://192.168.1.100:8088" value="<?= h($ys['admin_url'] ?? '') ?>">
                         </div>
-                        <div class="col-12 col-md-4">
-                            <label class="form-label fw-medium">Poort</label>
-                            <input type="text" name="poort" id="ys_poort" class="form-control rounded-3" value="8088">
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label fw-medium">Beheer URL</label>
-                            <input type="text" name="admin_url" id="ys_url" class="form-control rounded-3" placeholder="https://192.168.1.100:8088">
-                        </div>
-                        <div class="col-12 col-md-6">
+                        <div class="mb-3">
                             <label class="form-label fw-medium">Gebruikersnaam</label>
-                            <input type="text" name="admin_gebruiker" id="ys_gebruiker" class="form-control rounded-3" value="admin">
+                            <input type="text" name="admin_gebruiker" class="form-control rounded-3" value="<?= h($ys['admin_gebruiker'] ?? 'admin') ?>">
                         </div>
-                        <div class="col-12 col-md-6">
+                        <div class="mb-3">
                             <label class="form-label fw-medium">Wachtwoord</label>
                             <div class="input-group">
-                                <input type="password" name="admin_wachtwoord" id="ys_ww" class="form-control rounded-start-3" autocomplete="new-password">
-                                <button type="button" class="btn btn-outline-secondary" onclick="toggleVeld('ys_ww', this)"><i class="ri-eye-line"></i></button>
+                                <input type="password" name="admin_wachtwoord" id="tel_ys_ww" class="form-control rounded-start-3" placeholder="<?= $ys ? 'Laat leeg om ongewijzigd te laten' : '' ?>" autocomplete="new-password">
+                                <button type="button" class="btn btn-outline-secondary" onclick="toggleVeld('tel_ys_ww', this)"><i class="ri-eye-line"></i></button>
                             </div>
                         </div>
-                        <div class="col-12">
-                            <label class="form-label fw-medium">Firmware versie</label>
-                            <input type="text" name="firmware" id="ys_firmware" class="form-control rounded-3" placeholder="30.14.0.13">
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label fw-medium">Notities</label>
-                            <textarea name="notities" id="ys_notities" class="form-control rounded-3" rows="2"></textarea>
-                        </div>
                     </div>
-                    <div class="d-flex gap-2 mt-4">
-                        <button type="button" class="btn btn-outline-secondary flex-grow-1 rounded-3" data-bs-dismiss="modal">Annuleren</button>
-                        <button type="submit" class="btn btn-primary flex-grow-1 rounded-3">Opslaan</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal Simpbx -->
-<div class="modal fade" id="modalSimpbx" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content rounded-3 border-0 shadow">
-            <div class="modal-header border-0 pb-0 px-4 pt-4">
-                <h5 class="modal-title fw-bold">Simpbx configuratie</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body p-4">
-                <form method="post" action="<?= $base ?>/simpbx/opslaan.php">
-                    <?= csrf_field() ?>
-                    <input type="hidden" name="klant_id" value="<?= $id ?>">
-                    <div class="row g-3">
-                        <div class="col-12">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" name="actief" id="sbx_actief" <?= !empty($simpbx['actief']) ? 'checked' : '' ?>>
-                                <label class="form-check-label fw-medium" for="sbx_actief">Klant gebruikt Simpbx</label>
-                            </div>
-                        </div>
-                        <div class="col-12 col-md-6">
-                            <label class="form-label fw-medium">Aantal extensies</label>
-                            <input type="number" name="aantal_extensies" class="form-control rounded-3" min="0" value="<?= (int)($simpbx['aantal_extensies'] ?? 0) ?>">
-                        </div>
-                        <div class="col-12 col-md-6">
-                            <label class="form-label fw-medium">SIP domein</label>
-                            <input type="text" name="sip_domein" class="form-control rounded-3" placeholder="klant.simpbx.nl" value="<?= h($simpbx['sip_domein'] ?? '') ?>">
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label fw-medium">Beheer URL</label>
-                            <input type="text" name="admin_url" class="form-control rounded-3" placeholder="https://pbx.simpbx.nl/beheer" value="<?= h($simpbx['admin_url'] ?? '') ?>">
-                        </div>
-                        <div class="col-12 col-md-6">
-                            <label class="form-label fw-medium">Gebruikersnaam</label>
-                            <input type="text" name="admin_gebruiker" class="form-control rounded-3" value="<?= h($simpbx['admin_gebruiker'] ?? '') ?>">
-                        </div>
-                        <div class="col-12 col-md-6">
-                            <label class="form-label fw-medium">Wachtwoord</label>
-                            <div class="input-group">
-                                <input type="password" name="admin_wachtwoord" id="sbx_ww" class="form-control rounded-start-3" placeholder="<?= $simpbx ? 'Laat leeg om ongewijzigd te laten' : '' ?>" autocomplete="new-password">
-                                <button type="button" class="btn btn-outline-secondary" onclick="toggleVeld('sbx_ww', this)"><i class="ri-eye-line"></i></button>
-                            </div>
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label fw-medium">Notities</label>
-                            <textarea name="notities" class="form-control rounded-3" rows="2"><?= h($simpbx['notities'] ?? '') ?></textarea>
-                        </div>
-                    </div>
-                    <div class="d-flex gap-2 mt-4">
+                    <div class="d-flex gap-2 mt-2">
                         <button type="button" class="btn btn-outline-secondary flex-grow-1 rounded-3" data-bs-dismiss="modal">Annuleren</button>
                         <button type="submit" class="btn btn-primary flex-grow-1 rounded-3">Opslaan</button>
                     </div>
@@ -1749,6 +1600,12 @@ function bewerkNotitie(n) {
     document.getElementById('n_titel').value    = n.titel || '';
     document.getElementById('n_inhoud').value   = n.inhoud || '';
     new bootstrap.Modal(document.getElementById('modalNotitie')).show();
+}
+
+// ─── Telefonie type toggle ────────────────────────────────────────────────────
+function toggleTelType() {
+    var type = document.querySelector('input[name="type"]:checked')?.value;
+    document.getElementById('tel_yeastar_velden').style.display = type === 'yeastar' ? 'block' : 'none';
 }
 
 // ─── Toggle wachtwoord veld in modal ─────────────────────────────────────────
