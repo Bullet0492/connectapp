@@ -15,7 +15,7 @@ Options -Indexes
 </IfModule>
 
 # ─── Blokkeer gevoelige bestanden (altijd, ook op productie) ──────────────────
-<FilesMatch "^(migrate|migrate2|migrate3|migrate4|migrate5|migrate6|setup_key|testdata)\.php$">
+<FilesMatch "^(migrate|migrate2|migrate3|migrate4|setup_key|testdata)\.php$">
     Order allow,deny
     Deny from all
 </FilesMatch>
