@@ -65,9 +65,14 @@ require_once __DIR__ . '/../includes/header.php';
         <p class="text-muted mb-0"><i class="ri-building-line"></i> <?= h($klant['bedrijf']) ?></p>
         <?php endif; ?>
     </div>
-    <a href="index.php?bewerken=<?= $id ?>" class="btn btn-outline-secondary btn-sm">
-        <i class="ri-edit-line"></i> Bewerken
-    </a>
+    <div class="d-flex gap-2">
+        <a href="<?= $base ?>/qr/label_klant.php?id=<?= $id ?>" class="btn btn-outline-secondary btn-sm" target="_blank" title="QR-label afdrukken">
+            <i class="ri-qr-code-line"></i> QR
+        </a>
+        <a href="index.php?bewerken=<?= $id ?>" class="btn btn-outline-secondary btn-sm">
+            <i class="ri-edit-line"></i> Bewerken
+        </a>
+    </div>
 </div>
 
 <!-- Tabs -->

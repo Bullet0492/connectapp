@@ -152,6 +152,9 @@ function klant_pagina_url(int $p): string {
                     Detail
                 </a>
                 <a href="index.php?bewerken=<?= $k['id'] ?>" class="btn btn-sm btn-outline-secondary">Bewerken</a>
+                <a href="<?= $base ?>/qr/label_klant.php?id=<?= $k['id'] ?>" class="btn btn-sm btn-outline-secondary" target="_blank" title="QR-label afdrukken">
+                    <i class="ri-qr-code-line"></i>
+                </a>
                 <?php if ($gebruiker['rol'] === 'admin'): ?>
                 <a href="verwijderen.php?id=<?= $k['id'] ?>"
                    class="btn btn-sm btn-outline-danger ms-auto"
