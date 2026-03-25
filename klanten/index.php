@@ -85,9 +85,9 @@ function klant_pagina_url(int $p): string {
     <button class="btn btn-primary px-4" id="btn-nieuwe-klant" data-bs-toggle="modal" data-bs-target="#modalKlant">
         + Nieuwe klant
     </button>
-    <button class="btn btn-outline-secondary px-3" onclick="openQrScanner()" title="QR-code scannen">
+    <a href="<?= $base ?>/qr/scan.php" class="btn btn-outline-secondary px-3">
         <i class="ri-qr-scan-2-line me-1"></i> QR scannen
-    </button>
+    </a>
 </div>
 
 <!-- Zoekbalk -->
@@ -301,130 +301,6 @@ document.getElementById('btn-nieuwe-klant').addEventListener('click', function()
     });
     form.classList.remove('was-validated');
 });
-</script>
-
-<!-- Modal: QR Scanner -->
-<div class="modal fade" id="modalQr" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content rounded-3 border-0 shadow">
-            <div class="modal-header border-0 pb-0 px-4 pt-4">
-                <h5 class="modal-title fw-bold"><i class="ri-qr-scan-2-line me-2"></i>QR-code scannen</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body px-4 pb-4">
-                <p class="text-muted small mb-3">Richt de camera op het QR-label van de klant.</p>
-                <div class="position-relative" style="background:#000;border-radius:10px;overflow:hidden;aspect-ratio:1/1;">
-                    <video id="qr-video" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;display:block;"></video>
-                    <canvas id="qr-canvas" style="display:none;"></canvas>
-                    <!-- Zoeklijnen overlay -->
-                    <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;">
-                        <div style="width:60%;aspect-ratio:1/1;border:2px solid rgba(255,255,255,.6);border-radius:8px;box-shadow:0 0 0 2000px rgba(0,0,0,.35);"></div>
-                    </div>
-                </div>
-                <div id="qr-status" class="text-center text-muted small mt-3">Camera starten...</div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-<script>
-var qrStream = null;
-var qrTimer = null;
-
-function openQrScanner() {
-    new bootstrap.Modal(document.getElementById('modalQr')).show();
-    startQrCamera();
-}
-
-document.getElementById('modalQr').addEventListener('hidden.bs.modal', function() {
-    stopQrCamera();
-});
-
-function startQrCamera() {
-    var video = document.getElementById('qr-video');
-    var status = document.getElementById('qr-status');
-    status.innerHTML = 'Camera starten...';
-
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        status.innerHTML = '<span class="text-danger"><i class="ri-error-warning-line"></i> Camera wordt niet ondersteund door deze browser.<br>Gebruik Chrome of Safari op je telefoon.</span>';
-        return;
-    }
-    if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
-        status.innerHTML = '<span class="text-danger"><i class="ri-lock-line"></i> Camera vereist HTTPS.<br>Ga naar <strong>https://</strong>' + location.host + location.pathname + '</span>';
-        return;
-    }
-
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } } })
-        .then(function(stream) {
-            qrStream = stream;
-            video.srcObject = stream;
-            video.play();
-            status.textContent = 'Zoeken naar QR-code...';
-            requestAnimationFrame(scanQrFrame);
-        })
-        .catch(function(err) {
-            if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-                status.innerHTML = '<span class="text-danger"><i class="ri-camera-off-line"></i> Cameratoegang geweigerd.<br>Tik op het slotje in de adresbalk → <strong>Camera → Toestaan</strong></span>';
-            } else if (err.name === 'NotFoundError') {
-                status.innerHTML = '<span class="text-danger"><i class="ri-camera-off-line"></i> Geen camera gevonden op dit apparaat.</span>';
-            } else {
-                status.innerHTML = '<span class="text-danger">Camera fout: ' + err.message + '</span>';
-            }
-            status.innerHTML += '<br><button class="btn btn-sm btn-outline-secondary mt-2" onclick="startQrCamera()">Opnieuw proberen</button>';
-        });
-}
-
-function stopQrCamera() {
-    if (qrStream) {
-        qrStream.getTracks().forEach(function(t) { t.stop(); });
-        qrStream = null;
-    }
-    if (qrTimer) { cancelAnimationFrame(qrTimer); qrTimer = null; }
-}
-
-function scanQrFrame() {
-    if (!qrStream) return;
-    var video = document.getElementById('qr-video');
-    var canvas = document.getElementById('qr-canvas');
-    if (video.readyState !== video.HAVE_ENOUGH_DATA) {
-        qrTimer = requestAnimationFrame(scanQrFrame);
-        return;
-    }
-    canvas.width  = video.videoWidth;
-    canvas.height = video.videoHeight;
-    var ctx = canvas.getContext('2d');
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    var code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'dontInvert' });
-    if (code) {
-        handleQrResult(code.data);
-        return;
-    }
-    qrTimer = requestAnimationFrame(scanQrFrame);
-}
-
-function handleQrResult(tekst) {
-    stopQrCamera();
-    document.getElementById('qr-status').textContent = 'QR-code gevonden!';
-
-    // Probeer klant-ID te halen uit bekende URL-patronen:
-    // /qr/klant.php?id=X  of  /klanten/detail.php?id=X
-    var match = tekst.match(/[?&]id=(\d+)/);
-    if (match) {
-        var klantId = match[1];
-        // Sluit modal en ga naar klantpagina
-        bootstrap.Modal.getInstance(document.getElementById('modalQr')).hide();
-        window.location.href = '<?= $base ?>/klanten/detail.php?id=' + klantId;
-    } else {
-        document.getElementById('qr-status').textContent = 'Onbekende QR-code: ' + tekst;
-        // Herstart scanner na 2 seconden
-        setTimeout(function() {
-            document.getElementById('qr-status').textContent = 'Opnieuw zoeken...';
-            startQrCamera();
-        }, 2000);
-    }
-}
 </script>
 
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>
