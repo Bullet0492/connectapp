@@ -170,7 +170,7 @@ require_once __DIR__ . '/../includes/header.php';
     <p class="text-muted small mb-3">Open de app, tik op "+" of "Account toevoegen" en scan de QR-code.</p>
 
     <div class="text-center mb-3">
-        <div id="qrCanvas" style="display:inline-block;"></div>
+        <canvas id="qrCanvas"></canvas>
     </div>
 
     <details class="mb-4">
@@ -204,13 +204,11 @@ require_once __DIR__ . '/../includes/header.php';
     </form>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 <script>
-    new QRCode(document.getElementById('qrCanvas'), {
-        text: <?= json_encode($qr_url) ?>,
-        width: 200, height: 200,
-        colorDark: '#000', colorLight: '#fff',
-        correctLevel: QRCode.CorrectLevel.M
+    QRCode.toCanvas(document.getElementById('qrCanvas'), <?= json_encode($qr_url) ?>, {
+        width: 200, margin: 2,
+        color: { dark: '#000000', light: '#ffffff' }
     });
 </script>
 <?php endif; ?>
