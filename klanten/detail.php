@@ -184,6 +184,9 @@ require_once __DIR__ . '/../includes/header.php';
         <div class="bg-white rounded-3 border p-4">
             <h6 class="fw-bold mb-3">Contactinformatie</h6>
             <table class="table table-sm table-borderless mb-0">
+                <?php if (!empty($klant['intra_id'])): ?>
+                <tr><td class="text-muted" style="width:40%">Intelly ID</td><td><?= h($klant['intra_id']) ?></td></tr>
+                <?php endif; ?>
                 <tr><td class="text-muted" style="width:40%">E-mail</td><td><?= h($klant['email'] ?: '—') ?></td></tr>
                 <tr><td class="text-muted">Telefoon</td><td><?= h($klant['telefoon'] ?: '—') ?></td></tr>
                 <?php if (!empty($klant['website'])): ?>
@@ -193,9 +196,6 @@ require_once __DIR__ . '/../includes/header.php';
                     <?= h($klant['adres'] ?: '—') ?><br>
                     <?= h($klant['postcode'] . ' ' . $klant['stad']) ?>
                 </td></tr>
-                <?php if (!empty($klant['intra_id'])): ?>
-                <tr><td class="text-muted">Intelly ID</td><td><?= h($klant['intra_id']) ?></td></tr>
-                <?php endif; ?>
                 <?php if (!empty($klant['vps'])): ?>
                 <tr><td class="text-muted">VPS</td><td><i class="ri-server-line me-1 text-muted"></i><?= h($klant['vps']) ?></td></tr>
                 <?php endif; ?>
