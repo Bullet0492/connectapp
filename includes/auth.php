@@ -107,9 +107,17 @@ function login(string $login, string $wachtwoord): string {
         return 'geblokkeerd';
     }
 
-    $stmt = db()->prepare('SELECT id, naam, wachtwoord, rol, totp_actief FROM users WHERE email = ? OR gebruikersnaam = ?');
-    $stmt->execute([$login, $login]);
-    $user = $stmt->fetch();
+    try {
+        $stmt = db()->prepare('SELECT id, naam, wachtwoord, rol, totp_actief FROM users WHERE email = ? OR gebruikersnaam = ?');
+        $stmt->execute([$login, $login]);
+        $user = $stmt->fetch();
+    } catch (PDOException $e) {
+        // totp_actief kolom bestaat nog niet — migrate4.php nog niet uitgevoerd
+        $stmt = db()->prepare('SELECT id, naam, wachtwoord, rol FROM users WHERE email = ? OR gebruikersnaam = ?');
+        $stmt->execute([$login, $login]);
+        $user = $stmt->fetch();
+        if ($user) $user['totp_actief'] = 0;
+    }
 
     if ($user && password_verify($wachtwoord, $user['wachtwoord'])) {
         reset_login_pogingen();
