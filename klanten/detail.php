@@ -407,7 +407,14 @@ require_once __DIR__ . '/../includes/header.php';
 <?php elseif ($actieve_tab === 'apparaten'): ?>
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h6 class="fw-bold mb-0">Apparaten</h6>
-    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalApparaat">+ Toevoegen</button>
+    <div class="d-flex gap-2">
+        <?php if (!empty($apparaten)): ?>
+        <a href="<?= $base ?>/qr/labels_apparaten.php?klant_id=<?= $id ?>" class="btn btn-outline-secondary btn-sm" target="_blank">
+            <i class="ri-printer-line"></i> Alle QR labels
+        </a>
+        <?php endif; ?>
+        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalApparaat">+ Toevoegen</button>
+    </div>
 </div>
 <?php if (empty($apparaten)): ?>
     <div class="bg-white rounded-3 border p-4 text-center text-muted">Nog geen apparaten.</div>
