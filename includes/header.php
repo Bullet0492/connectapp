@@ -169,6 +169,12 @@ $base = basis_url();
                 Logboek
             </a>
         </li>
+        <li>
+            <a href="<?= $base ?>/sync_klanten.php" class="<?= basename($_SERVER['PHP_SELF']) === 'sync_klanten.php' ? 'active' : '' ?>">
+                <i class="ri-refresh-line" style="font-size:17px;"></i>
+                Klanten sync
+            </a>
+        </li>
         <?php endif; ?>
     </ul>
     <div class="sidebar-user">
