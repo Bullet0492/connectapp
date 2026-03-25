@@ -31,7 +31,7 @@ $base_url = basis_url();
     <meta charset="UTF-8">
     <title>QR-labels afdrukken</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <style>
         body { background: #f8f9fa; }
 
@@ -65,8 +65,8 @@ $base_url = basis_url();
 
         .label-qr canvas,
         .label-qr img {
-            width: 32mm;
-            height: 32mm;
+            width: 32mm !important;
+            height: 32mm !important;
             display: block;
         }
 
@@ -144,9 +144,7 @@ $base_url = basis_url();
 <div class="label-grid" id="labelGrid">
     <?php foreach ($apparaten as $a): ?>
     <div class="label-card" id="label-<?= $a['id'] ?>">
-        <div class="label-qr">
-            <canvas id="qr-<?= $a['id'] ?>"></canvas>
-        </div>
+        <div class="label-qr" id="qr-<?= $a['id'] ?>"></div>
         <div class="label-info">
             <div class="label-qr-code"><?= h($a['qr_code']) ?></div>
             <div class="label-type"><?= h(ucfirst($a['type'])) ?></div>
@@ -169,15 +167,14 @@ $base_url = basis_url();
 </div>
 
 <script>
-// Genereer QR-codes na laden pagina
 document.addEventListener('DOMContentLoaded', function() {
     <?php foreach ($apparaten as $a): ?>
-    QRCode.toCanvas(
-        document.getElementById('qr-<?= $a['id'] ?>'),
-        '<?= addslashes($base_url) ?>/qr/apparaat.php?qr=<?= urlencode($a['qr_code']) ?>',
-        { width: 121, margin: 1 }, // ~32mm bij 96dpi
-        function(err) { if (err) console.error(err); }
-    );
+    new QRCode(document.getElementById('qr-<?= $a['id'] ?>'), {
+        text: '<?= addslashes($base_url) ?>/qr/apparaat.php?qr=<?= urlencode($a['qr_code']) ?>',
+        width: 121,
+        height: 121,
+        correctLevel: QRCode.CorrectLevel.M
+    });
     <?php endforeach; ?>
 });
 </script>

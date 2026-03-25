@@ -23,7 +23,7 @@ $scan_url = $base_url . '/qr/klant.php?id=' . $id;
     <meta charset="UTF-8">
     <title>QR-label - <?= h($klant['naam']) ?></title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <style>
         body { background: #f8f9fa; }
 
@@ -46,7 +46,7 @@ $scan_url = $base_url . '/qr/klant.php?id=' . $id;
             box-sizing: border-box;
         }
 
-        .label-qr canvas { width: 32mm; height: 32mm; display: block; }
+        .label-qr img, .label-qr canvas { width: 32mm !important; height: 32mm !important; display: block; }
 
         .label-info {
             flex: 1;
@@ -95,9 +95,7 @@ $scan_url = $base_url . '/qr/klant.php?id=' . $id;
 
 <div class="p-4">
     <div class="label-card" id="label-klant">
-        <div class="label-qr">
-            <canvas id="qr-klant"></canvas>
-        </div>
+        <div class="label-qr" id="qr-klant"></div>
         <div class="label-info">
             <div class="label-titel">Klant</div>
             <div class="label-naam"><?= h($klant['naam']) ?></div>
@@ -114,12 +112,12 @@ $scan_url = $base_url . '/qr/klant.php?id=' . $id;
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    QRCode.toCanvas(
-        document.getElementById('qr-klant'),
-        '<?= addslashes($scan_url) ?>',
-        { width: 121, margin: 1 },
-        function(err) { if (err) console.error(err); }
-    );
+    new QRCode(document.getElementById('qr-klant'), {
+        text: '<?= addslashes($scan_url) ?>',
+        width: 121,
+        height: 121,
+        correctLevel: QRCode.CorrectLevel.M
+    });
 });
 </script>
 
