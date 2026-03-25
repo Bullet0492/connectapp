@@ -178,18 +178,14 @@ function startCamera() {
         }, { once: true });
     })
     .catch(function(err) {
-        var protocol = location.protocol;
-        var debug = ' [' + err.name + ' | ' + protocol + ']';
         if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-            setStatus('❌ Cameratoegang geblokkeerd voor deze site.' + debug + '<br><br>Tik op het <strong>slotje</strong> in de adresbalk → <strong>Camera → Toestaan</strong> → pagina herladen.', true);
+            setStatus('❌ Camera geblokkeerd voor deze site.<br><br>Tik op het <strong>slotje</strong> in de adresbalk → <strong>Camera → Toestaan</strong> → pagina herladen.', true);
         } else if (err.name === 'NotFoundError') {
-            setStatus('❌ Geen camera gevonden.' + debug, true);
+            setStatus('❌ Geen camera gevonden op dit apparaat.', true);
         } else if (err.name === 'NotReadableError') {
-            setStatus('❌ Camera in gebruik door andere app.' + debug, true);
-        } else if (err.name === 'SecurityError') {
-            setStatus('❌ Beveiligingsfout — site moet op HTTPS draaien.' + debug, true);
+            setStatus('❌ Camera in gebruik door een andere app.', true);
         } else {
-            setStatus('❌ ' + err.name + ': ' + err.message + debug, true);
+            setStatus('❌ ' + err.name + ': ' + err.message, true);
         }
     });
 }
