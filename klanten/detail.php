@@ -1242,23 +1242,24 @@ $iconen = ['pdf' => 'ri-file-pdf-line', 'docx' => 'ri-file-word-line', 'doc' => 
 <!-- ─── Tab: Telefonie ────────────────────────────────────────────────────── -->
 <?php elseif ($actieve_tab === 'telefonie'):
     $ys = !empty($yeastar_centralen) ? $yeastar_centralen[0] : null;
-    $tel_type = $ys ? 'yeastar' : (!empty($simpbx['actief']) ? 'simpbx' : 'geen');
+    $heeft_tel = $ys || !empty($simpbx['actief']);
 ?>
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h6 class="fw-bold mb-0"><i class="ri-phone-line me-1"></i> Telefonie</h6>
     <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalTelefonie">
-        <?= $tel_type !== 'geen' ? '<i class="ri-edit-line"></i> Bewerken' : '+ Instellen' ?>
+        <?= $heeft_tel ? '<i class="ri-edit-line"></i> Bewerken' : '+ Instellen' ?>
     </button>
 </div>
 
-<?php if ($tel_type === 'geen'): ?>
+<?php if (!$heeft_tel): ?>
 <div class="bg-white rounded-3 border p-4 text-center text-muted">
     <i class="ri-phone-off-line" style="font-size:28px;"></i>
     <div class="mt-2">Geen telefonie ingesteld.</div>
 </div>
+<?php endif; ?>
 
-<?php elseif ($tel_type === 'yeastar'): ?>
-<div class="bg-white rounded-3 border p-4" style="max-width:500px;">
+<?php if ($ys): ?>
+<div class="bg-white rounded-3 border p-4 mb-3" style="max-width:500px;">
     <div class="mb-3"><span class="badge bg-primary px-3 py-2" style="font-size:13px;"><i class="ri-base-station-line me-1"></i> Yeastar</span></div>
     <?php if (!empty($ys['admin_url'])): ?>
     <div class="d-flex align-items-center gap-2 mb-2">
@@ -1283,8 +1284,9 @@ $iconen = ['pdf' => 'ri-file-pdf-line', 'docx' => 'ri-file-word-line', 'doc' => 
     </div>
     <?php endif; ?>
 </div>
+<?php endif; ?>
 
-<?php elseif ($tel_type === 'simpbx'): ?>
+<?php if (!empty($simpbx['actief'])): ?>
 <div class="bg-white rounded-3 border p-4" style="max-width:500px;">
     <span class="badge bg-success px-3 py-2" style="font-size:13px;"><i class="ri-phone-line me-1"></i> Simpbx</span>
     <p class="text-muted small mt-3 mb-0">Klant maakt gebruik van onze eigen Simpbx telefooncentrale.</p>
@@ -1304,23 +1306,19 @@ $iconen = ['pdf' => 'ri-file-pdf-line', 'docx' => 'ri-file-word-line', 'doc' => 
                     <?= csrf_field() ?>
                     <input type="hidden" name="klant_id" value="<?= $id ?>">
                     <div class="mb-3">
-                        <label class="form-label fw-medium">Type</label>
+                        <label class="form-label fw-medium">Telefonie</label>
                         <div class="d-flex gap-3">
                             <div class="form-check">
-                                <input class="form-check-input" type="radio" name="type" id="tel_geen" value="geen" <?= $tel_type === 'geen' ? 'checked' : '' ?> onchange="toggleTelType()">
-                                <label class="form-check-label" for="tel_geen">Geen</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="type" id="tel_yeastar" value="yeastar" <?= $tel_type === 'yeastar' ? 'checked' : '' ?> onchange="toggleTelType()">
+                                <input class="form-check-input" type="checkbox" name="heeft_yeastar" id="tel_yeastar" value="1" <?= $ys ? 'checked' : '' ?> onchange="toggleTelType()">
                                 <label class="form-check-label" for="tel_yeastar">Yeastar</label>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input" type="radio" name="type" id="tel_simpbx" value="simpbx" <?= $tel_type === 'simpbx' ? 'checked' : '' ?> onchange="toggleTelType()">
+                                <input class="form-check-input" type="checkbox" name="heeft_simpbx" id="tel_simpbx" value="1" <?= !empty($simpbx['actief']) ? 'checked' : '' ?>>
                                 <label class="form-check-label" for="tel_simpbx">Simpbx</label>
                             </div>
                         </div>
                     </div>
-                    <div id="tel_yeastar_velden" style="display:<?= $tel_type === 'yeastar' ? 'block' : 'none' ?>;">
+                    <div id="tel_yeastar_velden" style="display:<?= $ys ? 'block' : 'none' ?>;">
                         <div class="mb-3">
                             <label class="form-label fw-medium">Link (beheer URL)</label>
                             <input type="text" name="admin_url" class="form-control rounded-3" placeholder="https://192.168.1.100:8088" value="<?= h($ys['admin_url'] ?? '') ?>">
@@ -1604,8 +1602,8 @@ function bewerkNotitie(n) {
 
 // ─── Telefonie type toggle ────────────────────────────────────────────────────
 function toggleTelType() {
-    var type = document.querySelector('input[name="type"]:checked')?.value;
-    document.getElementById('tel_yeastar_velden').style.display = type === 'yeastar' ? 'block' : 'none';
+    var checked = document.getElementById('tel_yeastar').checked;
+    document.getElementById('tel_yeastar_velden').style.display = checked ? 'block' : 'none';
 }
 
 // ─── Toggle wachtwoord veld in modal ─────────────────────────────────────────
