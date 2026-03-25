@@ -173,20 +173,46 @@ try {
     ok(count($contracten) . ' contracten aangemaakt');
 } catch (Exception $e) { err('Contracten: ' . $e->getMessage()); }
 
-// ─── Office 365 ──────────────────────────────────────────────────────────────
+// ─── Office 365 tenants ───────────────────────────────────────────────────────
 $o365_data = [
-    [$klant_ids[1], 'garagesmit',     'garagesmit.onmicrosoft.com', 'a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'admin@garagesmit.nl', 'M365!Admin#Smit2024',    'Microsoft 365 Business Premium', 5,  1, 1, "5x Business Premium\nMFA verplicht voor alle gebruikers\nConditional Access: blokkeer toegang buiten NL"],
-    [$klant_ids[2], 'jansenpraktijk', 'jansenpraktijk.onmicrosoft.com','b2c3d4e5-f6a7-8901-bcde-f12345678901','praktijk@jansen-tand.nl','O365!Tandarts#2024',  'Microsoft 365 Business Standard', 3, 1, 0, "3x Business Standard\nMFA ingeschakeld\nIntune MDM voor MacBooks"],
-    [$klant_ids[3], 'vandijktransport','vandijktransport.onmicrosoft.com','c3d4e5f6-a7b8-9012-cdef-123456789012','rob@vandijktransport.nl','Azure$M365!VanDijk','Microsoft 365 E3',               12, 1, 1, "12x E3 licenties\nConditional Access + Intune\nAzure AD Connect met lokaal AD"],
+    // klant_id, tenant_naam, tenant_id, admin_email, wachtwoord, notities
+    [$klant_ids[1], 'garagesmit.onmicrosoft.com',      'a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'admin@garagesmit.nl',      'M365!Admin#Smit2024',  "Intune MDM ingeschakeld\nConditional Access: blokkeer toegang buiten NL"],
+    [$klant_ids[2], 'jansenpraktijk.onmicrosoft.com',  'b2c3d4e5-f6a7-8901-bcde-f12345678901', 'praktijk@jansen-tand.nl', 'O365!Tandarts#2024',   "Intune MDM voor MacBooks\nAVG: toegang beperkt tot NL"],
+    [$klant_ids[3], 'vandijktransport.onmicrosoft.com','c3d4e5f6-a7b8-9012-cdef-123456789012', 'rob@vandijktransport.nl', 'Azure$M365!VanDijk',   "Azure AD Connect met lokaal AD\nConditional Access + Intune"],
 ];
 try {
     foreach ($o365_data as $o) {
-        $enc = encrypt_wachtwoord($o[5]);
-        $db->prepare('INSERT INTO klant_o365 (klant_id, tenant_naam, tenant_id, admin_email, admin_wachtwoord_enc, licentie_type, aantal_licenties, mfa_actief, conditional_access, notities) VALUES (?,?,?,?,?,?,?,?,?,?)')
-           ->execute([$o[0], $o[2], $o[3], $o[4], $enc, $o[6], $o[7], $o[8], $o[9], $o[10]]);
+        $enc = encrypt_wachtwoord($o[4]);
+        $db->prepare('INSERT INTO klant_o365 (klant_id, tenant_naam, tenant_id, admin_email, admin_wachtwoord_enc, notities) VALUES (?,?,?,?,?,?)')
+           ->execute([$o[0], $o[1], $o[2], $o[3], $enc, $o[5]]);
     }
-    ok(count($o365_data) . ' Office 365 records aangemaakt');
-} catch (Exception $e) { err('Office 365: ' . $e->getMessage()); }
+    ok(count($o365_data) . ' Office 365 tenants aangemaakt');
+} catch (Exception $e) { err('Office 365 tenants: ' . $e->getMessage()); }
+
+// ─── Office 365 gebruikers ────────────────────────────────────────────────────
+$o365_gebruikers_data = [
+    // klant_id, naam, email, wachtwoord, rol, licentie_type, notities
+    [$klant_ids[1], 'Peter Smit',      'peter@garagesmit.nl',  'Gebruiker!Smit#24',  'Globale beheerder',   'Microsoft 365 Business Premium',  'Eigenaar, volledige beheertoegang'],
+    [$klant_ids[1], 'Karin Smit',      'karin@garagesmit.nl',  'Karin!M365#2024',    'Gebruiker',           'Microsoft 365 Business Premium',  'Administratie'],
+    [$klant_ids[1], 'Jan Monteur',     'jan@garagesmit.nl',    'Jan!Garage#24',      'Gebruiker',           'Microsoft 365 Business Basic',    'Monteur werkplaats'],
+    [$klant_ids[1], 'Lisa Balie',      'lisa@garagesmit.nl',   'Lisa!Balie#2024',    'Gebruiker',           'Microsoft 365 Business Basic',    'Balie medewerker'],
+    [$klant_ids[1], 'Tom Inkoop',      'tom@garagesmit.nl',    'Tom!Inkoop#24',      'Gebruiker',           'Exchange Online Plan 1',          'Inkoop, alleen e-mail nodig'],
+    [$klant_ids[2], 'Dr. A. Jansen',   'ajansen@jansen-tand.nl',   'Jansen!Doc#2024', 'Globale beheerder', 'Microsoft 365 Business Standard', 'Eigenaar praktijk'],
+    [$klant_ids[2], 'Sandra Pieterse', 'receptie@jansen-tand.nl',  'Sandra!Rec#24',  'Gebruiker',           'Microsoft 365 Business Standard', 'Receptie + planning'],
+    [$klant_ids[2], 'Mark Assistent',  'mark@jansen-tand.nl',      'Mark!Tand#2024', 'Gebruiker',           'Microsoft 365 Business Basic',    'Tandartsassistent'],
+    [$klant_ids[3], 'Rob van Dijk',    'rob@vandijktransport.nl',   'Rob!Dir#M365',   'Globale beheerder',   'Microsoft 365 E3',                'Directeur, volledige toegang'],
+    [$klant_ids[3], 'Mike de Groot',   'mike@vandijktransport.nl',  'Mike!IT#E3#24',  'Gebruikersbeheerder', 'Microsoft 365 E3',                'IT contactpersoon'],
+    [$klant_ids[3], 'Sandra Logistiek','sandra@vandijktransport.nl','Sandra!Log#24',  'Gebruiker',           'Microsoft 365 E3',                'Logistiek manager'],
+    [$klant_ids[3], 'Ahmed Chauffeur', 'ahmed@vandijktransport.nl', 'Ahmed!Ch#2024',  'Gebruiker',           'Microsoft 365 Business Basic',    'Chauffeur, mobiele toegang'],
+];
+try {
+    foreach ($o365_gebruikers_data as $gu) {
+        $enc = $gu[3] !== '' ? encrypt_wachtwoord($gu[3]) : null;
+        $db->prepare('INSERT INTO klant_o365_gebruikers (klant_id, naam, email, wachtwoord_enc, rol, licentie_type, notities) VALUES (?,?,?,?,?,?,?)')
+           ->execute([$gu[0], $gu[1], $gu[2], $enc, $gu[4], $gu[5], $gu[6]]);
+    }
+    ok(count($o365_gebruikers_data) . ' Office 365 gebruikers aangemaakt');
+} catch (Exception $e) { err('Office 365 gebruikers: ' . $e->getMessage()); }
 
 // ─── Yeastar centralen ────────────────────────────────────────────────────────
 $yeastar_data = [
