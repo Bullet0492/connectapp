@@ -37,7 +37,7 @@ Options -Indexes
     Header always set Referrer-Policy "strict-origin-when-cross-origin"
 
     # Schakel onnodige browser-features uit
-    Header always set Permissions-Policy "geolocation=(), microphone=(), camera=(), payment=()"
+    Header always set Permissions-Policy "geolocation=(), microphone=(), camera=(self), payment=()"
 
     # Content Security Policy
     # Staat CDN (Bootstrap, Remix Icons) en inline scripts toe — pas aan als nodig
