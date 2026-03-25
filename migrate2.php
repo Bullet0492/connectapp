@@ -13,9 +13,9 @@ echo '<body class="p-4"><h3>Database migratie 2</h3><div class="mt-3">';
 $stappen = [];
 
 // ─── Apparaten: extra velden ─────────────────────────────────────────────────
-$stappen[] = ["ALTER TABLE apparaten ADD COLUMN IF NOT EXISTS mac_adres   VARCHAR(50) DEFAULT ''", "apparaten.mac_adres toegevoegd"];
-$stappen[] = ["ALTER TABLE apparaten ADD COLUMN IF NOT EXISTS ip_adres    VARCHAR(50) DEFAULT ''", "apparaten.ip_adres toegevoegd"];
-$stappen[] = ["ALTER TABLE apparaten ADD COLUMN IF NOT EXISTS firmware    VARCHAR(100) DEFAULT ''", "apparaten.firmware toegevoegd"];
+$stappen[] = ["ALTER TABLE apparaten ADD COLUMN mac_adres   VARCHAR(50) DEFAULT ''", "apparaten.mac_adres toegevoegd"];
+$stappen[] = ["ALTER TABLE apparaten ADD COLUMN ip_adres    VARCHAR(50) DEFAULT ''", "apparaten.ip_adres toegevoegd"];
+$stappen[] = ["ALTER TABLE apparaten ADD COLUMN firmware    VARCHAR(100) DEFAULT ''", "apparaten.firmware toegevoegd"];
 
 // ─── Servicehistorie ─────────────────────────────────────────────────────────
 $stappen[] = ["CREATE TABLE IF NOT EXISTS service_historie (

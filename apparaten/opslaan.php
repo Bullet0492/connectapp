@@ -1,4 +1,6 @@
 <?php
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/functions.php';
@@ -42,8 +44,8 @@ if ($apparaat_id) {
     flash_set('succes', 'Apparaat bijgewerkt.');
 } else {
     $data['qr_code'] = volgende_qr_nummer();
-    db()->prepare("INSERT INTO apparaten (klant_id,qr_code,type,merk,model,serienummer,aanschafdatum,garantie_tot,locatie,status,notities)
-        VALUES (:klant_id,:qr_code,:type,:merk,:model,:serienummer,:aanschafdatum,:garantie_tot,:locatie,:status,:notities)")
+    db()->prepare("INSERT INTO apparaten (klant_id,qr_code,type,merk,model,serienummer,aanschafdatum,garantie_tot,locatie,mac_adres,ip_adres,firmware,status,notities)
+        VALUES (:klant_id,:qr_code,:type,:merk,:model,:serienummer,:aanschafdatum,:garantie_tot,:locatie,:mac_adres,:ip_adres,:firmware,:status,:notities)")
        ->execute($data);
     log_actie('apparaat_aangemaakt', 'QR: ' . $data['qr_code'] . ', Klant ID: ' . $klant_id);
     flash_set('succes', 'Apparaat toegevoegd. QR-code: ' . $data['qr_code']);
