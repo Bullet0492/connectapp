@@ -4,10 +4,17 @@
  *
  * BASE_URL: de URL naar de map waar de app staat, zonder trailing slash.
  * Voorbeelden:
- *   'http://localhost/App'              (lokaal XAMPP)
- *   'https://jouwdomein.nl/klantenapp'  (op de VPS)
+ *   'http://localhost/connectapp'       (lokaal XAMPP)
+ *   'https://www.connect4it.nl/app'     (op de VPS)
  */
 define('BASE_URL', 'https://www.connect4it.nl/app');
+
+/**
+ * DEVELOPMENT MODE
+ * Zet op true voor lokale ontwikkeling (schakelt HTTPS-vereiste voor cookies uit).
+ * ALTIJD false op productie!
+ */
+define('DEVELOPMENT_MODE', false);
 
 /**
  * ENCRYPTIE SLEUTEL voor wachtwoordkluis
@@ -15,3 +22,4 @@ define('BASE_URL', 'https://www.connect4it.nl/app');
  * Wijzig deze na eerste installatie en bewaar veilig!
  */
 define('ENCRYPT_KEY', '8db04c5e673e89e429acfa576dfcb783febacafab8bbf2804eddfae0d82f1278');
+

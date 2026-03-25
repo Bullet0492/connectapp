@@ -1,13 +1,48 @@
-# Verberg gevoelige bestanden
-<FilesMatch "^(migrate|setup_key|config)\.php$">
-    # Sta lokale toegang toe (development), blokkeer buiten lokaal op productie
-</FilesMatch>
+# ─── HTTPS afdwingen ─────────────────────────────────────────────────────────
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{HTTPS} off
+    RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+</IfModule>
 
-# Verberg directory listings
+# ─── Directory listings uitschakelen ─────────────────────────────────────────
 Options -Indexes
 
-# Blokkeer directe toegang tot includes map
+# ─── Blokkeer directe toegang tot includes map ───────────────────────────────
 <IfModule mod_rewrite.c>
     RewriteEngine On
     RewriteRule ^includes/ - [F,L]
+</IfModule>
+
+# ─── Blokkeer gevoelige bestanden (altijd, ook op productie) ──────────────────
+<FilesMatch "^(migrate|migrate2|migrate3|migrate4|setup_key)\.php$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# ─── Security headers ────────────────────────────────────────────────────────
+<IfModule mod_headers.c>
+    # Klik-jacking voorkomen
+    Header always set X-Frame-Options "DENY"
+
+    # Voorkomt MIME-type sniffing
+    Header always set X-Content-Type-Options "nosniff"
+
+    # HTTPS verplichten voor 2 jaar (alleen activeren als HTTPS 100% werkt!)
+    Header always set Strict-Transport-Security "max-age=63072000; includeSubDomains"
+
+    # Beperkt welke info de browser doorstuurt bij links
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+    # Schakel onnodige browser-features uit
+    Header always set Permissions-Policy "geolocation=(), microphone=(), camera=(), payment=()"
+
+    # Content Security Policy
+    # Staat CDN (Bootstrap, Remix Icons) en inline scripts toe — pas aan als nodig
+    Header always set Content-Security-Policy "default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com; connect-src 'self'; frame-ancestors 'none'"
+</IfModule>
+
+# ─── Verberg PHP-versie ───────────────────────────────────────────────────────
+<IfModule mod_headers.c>
+    Header unset X-Powered-By
 </IfModule>
