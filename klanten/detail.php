@@ -450,9 +450,6 @@ require_once __DIR__ . '/../includes/header.php';
             <?php if (!empty($a['locatie'])): ?>
             <div class="small text-muted"><i class="ri-map-pin-line"></i> <?= h($a['locatie']) ?></div>
             <?php endif; ?>
-            <?php if (!empty($a['garantie_tot'])): ?>
-            <div class="small text-muted"><i class="ri-shield-check-line"></i> Garantie t/m <?= h($a['garantie_tot']) ?></div>
-            <?php endif; ?>
         </div>
     </div>
     <?php endforeach; ?>
@@ -510,10 +507,6 @@ require_once __DIR__ . '/../includes/header.php';
                         <div class="col-12 col-md-6">
                             <label class="form-label fw-medium">Aanschafdatum</label>
                             <input type="date" name="aanschafdatum" id="a_aanschafdatum" class="form-control rounded-3">
-                        </div>
-                        <div class="col-12 col-md-6">
-                            <label class="form-label fw-medium">Garantie tot</label>
-                            <input type="date" name="garantie_tot" id="a_garantie_tot" class="form-control rounded-3">
                         </div>
                         <div class="col-12">
                             <label class="form-label fw-medium">Locatie bij klant</label>
@@ -1570,7 +1563,6 @@ function bewerkApparaat(a) {
     document.getElementById('a_model').value      = a.model || '';
     document.getElementById('a_serienummer').value= a.serienummer || '';
     document.getElementById('a_aanschafdatum').value = a.aanschafdatum || '';
-    document.getElementById('a_garantie_tot').value  = a.garantie_tot || '';
     document.getElementById('a_locatie').value    = a.locatie || '';
     document.getElementById('a_mac_adres').value  = a.mac_adres || '';
     document.getElementById('a_ip_adres').value   = a.ip_adres || '';

@@ -86,9 +86,6 @@ require_once __DIR__ . '/../includes/header.php';
                 <?php if (!empty($apparaat['aanschafdatum'])): ?>
                 <tr><td class="text-muted">Aanschafdatum</td><td><?= h(date('d-m-Y', strtotime($apparaat['aanschafdatum']))) ?></td></tr>
                 <?php endif; ?>
-                <?php if (!empty($apparaat['garantie_tot'])): ?>
-                <tr><td class="text-muted">Garantie t/m</td><td><?= h(date('d-m-Y', strtotime($apparaat['garantie_tot']))) ?></td></tr>
-                <?php endif; ?>
             </table>
             <?php if (empty($apparaat['ip_adres']) && empty($apparaat['mac_adres']) && empty($apparaat['firmware'])): ?>
             <p class="text-muted small mb-0">Geen netwerk/firmware info.</p>
