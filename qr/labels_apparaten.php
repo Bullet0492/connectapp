@@ -64,7 +64,7 @@ $base_url = basis_url();
     <?php if (!empty($apparaten)): ?>
     <button onclick="window.print()" class="btn btn-primary btn-sm">Afdrukken</button>
     <?php endif; ?>
-    <button onclick="window.history.back()" class="btn btn-outline-secondary btn-sm">← Terug</button>
+    <a href="<?= $base_url ?>/klanten/detail.php?id=<?= $klant_id ?>&tab=apparaten" class="btn btn-outline-secondary btn-sm">← Terug</a>
 </div>
 
 <?php if (empty($apparaten)): ?>

@@ -90,7 +90,7 @@ $scan_url = $base_url . '/qr/klant.php?id=' . $id;
 <div class="no-print p-3 border-bottom bg-white d-flex align-items-center gap-3">
     <strong>QR-label klant: <?= h($klant['naam']) ?></strong>
     <button onclick="window.print()" class="btn btn-primary btn-sm">Afdrukken</button>
-    <button onclick="window.history.back()" class="btn btn-outline-secondary btn-sm">← Terug</button>
+    <a href="<?= $base_url ?>/klanten/detail.php?id=<?= $id ?>" class="btn btn-outline-secondary btn-sm">← Terug</a>
 </div>
 
 <div class="p-4">

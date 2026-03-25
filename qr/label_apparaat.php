@@ -51,7 +51,7 @@ $scan_url  = $base_url . '/qr/apparaat.php?id=' . $id;
 <div class="no-print p-3 border-bottom bg-white d-flex align-items-center gap-3">
     <strong>QR-label: <?= h($apparaat['qr_code'] ?? 'Apparaat') ?></strong>
     <button onclick="window.print()" class="btn btn-primary btn-sm">Afdrukken</button>
-    <button onclick="window.history.back()" class="btn btn-outline-secondary btn-sm">← Terug</button>
+    <a href="<?= $base_url ?>/klanten/detail.php?id=<?= $apparaat['klant_id'] ?>&tab=apparaten" class="btn btn-outline-secondary btn-sm">← Terug</a>
 </div>
 
 <div class="p-4">
