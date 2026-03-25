@@ -344,9 +344,18 @@ document.getElementById('modalQr').addEventListener('hidden.bs.modal', function(
 function startQrCamera() {
     var video = document.getElementById('qr-video');
     var status = document.getElementById('qr-status');
-    status.textContent = 'Camera starten...';
+    status.innerHTML = 'Camera starten...';
 
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        status.innerHTML = '<span class="text-danger"><i class="ri-error-warning-line"></i> Camera wordt niet ondersteund door deze browser.<br>Gebruik Chrome of Safari op je telefoon.</span>';
+        return;
+    }
+    if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+        status.innerHTML = '<span class="text-danger"><i class="ri-lock-line"></i> Camera vereist HTTPS.<br>Ga naar <strong>https://</strong>' + location.host + location.pathname + '</span>';
+        return;
+    }
+
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } } })
         .then(function(stream) {
             qrStream = stream;
             video.srcObject = stream;
@@ -355,7 +364,14 @@ function startQrCamera() {
             requestAnimationFrame(scanQrFrame);
         })
         .catch(function(err) {
-            status.textContent = 'Camera niet beschikbaar: ' + err.message;
+            if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                status.innerHTML = '<span class="text-danger"><i class="ri-camera-off-line"></i> Cameratoegang geweigerd.<br>Tik op het slotje in de adresbalk → <strong>Camera → Toestaan</strong></span>';
+            } else if (err.name === 'NotFoundError') {
+                status.innerHTML = '<span class="text-danger"><i class="ri-camera-off-line"></i> Geen camera gevonden op dit apparaat.</span>';
+            } else {
+                status.innerHTML = '<span class="text-danger">Camera fout: ' + err.message + '</span>';
+            }
+            status.innerHTML += '<br><button class="btn btn-sm btn-outline-secondary mt-2" onclick="startQrCamera()">Opnieuw proberen</button>';
         });
 }
 
