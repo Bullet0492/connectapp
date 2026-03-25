@@ -126,7 +126,7 @@ $notities = [
     [$klant_ids[1], 'Microsoft 365',    "Tenant: garagesmit.onmicrosoft.com\n5x Business Premium licenties\nMFA ingeschakeld voor alle gebruikers\nConditional Access policy actief"],
     [$klant_ids[2], 'AVG / NEN7510',    "Verwerkersovereenkomst getekend: 2023-05-01\nPrivacycontactpersoon: Dr. Jansen\nDatabeheerder aangesteld\nJaarlijkse audit gepland: 2026-05"],
     [$klant_ids[2], 'Netwerkinrichting',"Netwerk: 172.16.0.0/24\nFirewall: 172.16.0.1\nBehandelkamer 1: 172.16.0.10\nReceptie: 172.16.0.11\nPrinter: 172.16.0.20\nWiFi AP: 172.16.0.30"],
-    [$klant_ids[3], 'VPN configuratie', "Site-to-site VPN Rotterdam ↔ Venlo\nProtocol: IPSec IKEv2\nPre-shared key: zie wachtwoordkluis → VPN PSK\nTunnel up sinds: 2025-01-15\nMonitoring: Zabbix"],
+    [$klant_ids[3], 'VPN configuratie', "Site-to-site VPN Rotterdam - Venlo\nProtocol: IPSec IKEv2\nPre-shared key: zie wachtwoordkluis > VPN PSK\nTunnel up sinds: 2025-01-15\nMonitoring: Zabbix"],
     [$klant_ids[3], 'Azure omgeving',   "Subscription: Van Dijk Production\nResource groups: rg-infra, rg-backup\nVMs: 2x Windows Server 2022\nBackup: Azure Backup dagelijks 02:00\nKosten ca. €320/maand"],
 ];
 try {
