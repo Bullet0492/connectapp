@@ -8,12 +8,11 @@ vereist_login();
 
 $db = db();
 
-// Statistieken
 $stats = [
     'klanten'      => (int)$db->query('SELECT COUNT(*) FROM klanten')->fetchColumn(),
     'apparaten'    => (int)$db->query('SELECT COUNT(*) FROM apparaten')->fetchColumn(),
     'inloggegevens'=> (int)$db->query('SELECT COUNT(*) FROM inloggegevens')->fetchColumn(),
-    'contacten'    => (int)$db->query('SELECT COUNT(*) FROM contactpersonen')->fetchColumn(),
+    'contracten'   => (int)$db->query('SELECT COUNT(*) FROM contracten')->fetchColumn(),
 ];
 
 // Verlopen of bijna-verlopen contracten (30 dagen)
@@ -24,16 +23,17 @@ $verlopendeContracten = $db->query(
      ORDER BY c.eind_datum ASC LIMIT 10"
 )->fetchAll();
 
-// Recente apparaten (5)
-$recenteApparaten = $db->query(
-    "SELECT a.*, k.naam AS klant_naam FROM apparaten a
-     LEFT JOIN klanten k ON k.id = a.klant_id
-     ORDER BY a.id DESC LIMIT 5"
-)->fetchAll();
-
 // Recente klanten (5)
 $recenteKlanten = $db->query(
     "SELECT * FROM klanten ORDER BY id DESC LIMIT 5"
+)->fetchAll();
+
+// Recente servicehistorie (5)
+$recenteService = $db->query(
+    "SELECT s.*, k.naam AS klant_naam, k.id AS klant_id
+     FROM service_historie s
+     LEFT JOIN klanten k ON k.id = s.klant_id
+     ORDER BY s.datum DESC, s.id DESC LIMIT 5"
 )->fetchAll();
 
 require_once __DIR__ . '/includes/header.php';
@@ -56,29 +56,27 @@ require_once __DIR__ . '/includes/header.php';
         </a>
     </div>
     <div class="col-6 col-md-3">
-        <a href="<?= $base ?>/apparaten/index.php" class="text-decoration-none">
-            <div class="bg-white rounded-3 border p-3 text-center h-100">
-                <div class="mb-2"><i class="ri-computer-line" style="font-size:28px;color:#185E9B;"></i></div>
-                <div class="fw-bold fs-3"><?= $stats['apparaten'] ?></div>
-                <div class="text-muted small">Apparaten</div>
-            </div>
-        </a>
-    </div>
-    <div class="col-6 col-md-3">
-        <a href="<?= $base ?>/inloggegevens/index.php" class="text-decoration-none">
-            <div class="bg-white rounded-3 border p-3 text-center h-100">
-                <div class="mb-2"><i class="ri-key-2-line" style="font-size:28px;color:#185E9B;"></i></div>
-                <div class="fw-bold fs-3"><?= $stats['inloggegevens'] ?></div>
-                <div class="text-muted small">Wachtwoorden</div>
-            </div>
-        </a>
+        <div class="bg-white rounded-3 border p-3 text-center h-100">
+            <div class="mb-2"><i class="ri-computer-line" style="font-size:28px;color:#185E9B;"></i></div>
+            <div class="fw-bold fs-3"><?= $stats['apparaten'] ?></div>
+            <div class="text-muted small">Apparaten</div>
+        </div>
     </div>
     <div class="col-6 col-md-3">
         <div class="bg-white rounded-3 border p-3 text-center h-100">
-            <div class="mb-2"><i class="ri-contacts-line" style="font-size:28px;color:#185E9B;"></i></div>
-            <div class="fw-bold fs-3"><?= $stats['contacten'] ?></div>
-            <div class="text-muted small">Contactpersonen</div>
+            <div class="mb-2"><i class="ri-key-2-line" style="font-size:28px;color:#185E9B;"></i></div>
+            <div class="fw-bold fs-3"><?= $stats['inloggegevens'] ?></div>
+            <div class="text-muted small">Wachtwoorden</div>
         </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <a href="<?= $base ?>/klanten/index.php" class="text-decoration-none">
+            <div class="bg-white rounded-3 border p-3 text-center h-100">
+                <div class="mb-2"><i class="ri-file-shield-2-line" style="font-size:28px;color:#185E9B;"></i></div>
+                <div class="fw-bold fs-3"><?= $stats['contracten'] ?></div>
+                <div class="text-muted small">Contracten</div>
+            </div>
+        </a>
     </div>
 </div>
 
@@ -129,25 +127,25 @@ require_once __DIR__ . '/includes/header.php';
         </div>
     </div>
 
-    <!-- Recente apparaten -->
+    <!-- Recente servicehistorie -->
     <div class="col-md-6">
         <div class="bg-white rounded-3 border p-4">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h6 class="fw-bold mb-0">Recente apparaten</h6>
-                <a href="<?= $base ?>/apparaten/index.php" class="btn btn-sm btn-outline-secondary">Alle apparaten</a>
+                <h6 class="fw-bold mb-0">Recente service</h6>
+                <a href="<?= $base ?>/klanten/index.php" class="btn btn-sm btn-outline-secondary">Alle klanten</a>
             </div>
-            <?php if (empty($recenteApparaten)): ?>
-                <p class="text-muted small mb-0">Nog geen apparaten.</p>
+            <?php if (empty($recenteService)): ?>
+                <p class="text-muted small mb-0">Nog geen servicehistorie.</p>
             <?php else: ?>
                 <div class="list-group list-group-flush">
-                    <?php foreach ($recenteApparaten as $a): ?>
-                    <a href="<?= $base ?>/apparaten/detail.php?id=<?= $a['id'] ?>" class="list-group-item list-group-item-action px-0 py-2 border-0 border-bottom text-decoration-none">
+                    <?php foreach ($recenteService as $s): ?>
+                    <a href="<?= $base ?>/klanten/detail.php?id=<?= $s['klant_id'] ?>&tab=service" class="list-group-item list-group-item-action px-0 py-2 border-0 border-bottom text-decoration-none">
                         <div class="d-flex justify-content-between align-items-start">
                             <div>
-                                <div class="fw-medium small"><?= h($a['qr_code']) ?> — <?= h($a['merk'] . ' ' . $a['model']) ?></div>
-                                <div class="text-muted" style="font-size:12px;"><?= h($a['klant_naam'] ?? '') ?></div>
+                                <div class="fw-medium small"><?= h($s['klant_naam']) ?></div>
+                                <div class="text-muted" style="font-size:12px;"><?= h(mb_strimwidth($s['omschrijving'], 0, 55, '…')) ?></div>
                             </div>
-                            <span class="badge rounded-pill badge-<?= $a['status'] ?>" style="font-size:10px;"><?= h($a['status']) ?></span>
+                            <span class="text-muted ms-2" style="font-size:11px;white-space:nowrap;"><?= h(date('d-m', strtotime($s['datum']))) ?></span>
                         </div>
                     </a>
                     <?php endforeach; ?>
