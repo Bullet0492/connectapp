@@ -185,19 +185,14 @@ require_once __DIR__ . '/../includes/header.php';
 
     <form method="post">
         <?= csrf_field() ?>
-        <input type="hidden" name="actie" value="bevestig_setup">
         <div class="mb-3">
             <input type="text" name="totp_code" class="form-control rounded-3 font-monospace text-center"
                    style="font-size:1.5rem;letter-spacing:.4rem;" maxlength="6" pattern="\d{6}"
                    inputmode="numeric" placeholder="000000" autofocus autocomplete="one-time-code" required>
         </div>
         <div class="d-flex gap-2">
-            <form method="post" class="d-inline">
-                <?= csrf_field() ?>
-                <input type="hidden" name="actie" value="annuleer_setup">
-                <button type="submit" class="btn btn-outline-secondary rounded-3">Annuleren</button>
-            </form>
-            <button type="submit" class="btn btn-primary rounded-3 flex-grow-1">
+            <button type="submit" name="actie" value="annuleer_setup" class="btn btn-outline-secondary rounded-3">Annuleren</button>
+            <button type="submit" name="actie" value="bevestig_setup" class="btn btn-primary rounded-3 flex-grow-1">
                 <i class="ri-shield-check-line me-1"></i> 2FA activeren
             </button>
         </div>
