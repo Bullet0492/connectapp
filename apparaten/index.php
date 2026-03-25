@@ -16,8 +16,8 @@ $per_pagina = 20;
 $where = [];
 $params = [];
 if ($zoek !== '') {
-    $where[] = "(a.qr_code LIKE ? OR a.merk LIKE ? OR a.model LIKE ? OR a.serienummer LIKE ? OR a.locatie LIKE ? OR k.naam LIKE ?)";
-    for ($i = 0; $i < 6; $i++) $params[] = "%$zoek%";
+    $where[] = "(a.merk LIKE ? OR a.model LIKE ? OR a.serienummer LIKE ? OR a.locatie LIKE ? OR k.naam LIKE ?)";
+    for ($i = 0; $i < 5; $i++) $params[] = "%$zoek%";
 }
 if ($filter_klant) {
     $where[] = "a.klant_id = ?";
@@ -57,7 +57,7 @@ function app_pagina_url(int $p): string {
                 <i class="ri-search-line" style="font-size:16px;color:#6c757d;"></i>
             </span>
             <input type="search" name="zoek" id="zoek_input" class="form-control border-start-0 border-end-0 ps-0"
-                   placeholder="Zoek op QR-code, merk, model, serienummer, klant..."
+                   placeholder="Zoek op merk, model, serienummer, klant..."
                    value="<?= h($zoek) ?>">
             <?php if ($zoek !== '' || $filter_klant): ?>
             <a href="index.php" class="input-group-text bg-white text-muted" title="Wissen">
@@ -80,7 +80,6 @@ function app_pagina_url(int $p): string {
         <table class="table table-hover mb-0">
             <thead class="table-light">
                 <tr>
-                    <th>QR-code</th>
                     <th>Type</th>
                     <th>Merk / Model</th>
                     <th>Klant</th>
@@ -92,7 +91,6 @@ function app_pagina_url(int $p): string {
             <tbody>
                 <?php foreach ($apparaten as $a): ?>
                 <tr>
-                    <td><code><?= h($a['qr_code']) ?></code></td>
                     <td><?= h(ucfirst($a['type'])) ?></td>
                     <td><?= h(trim($a['merk'] . ' ' . $a['model'])) ?></td>
                     <td>
@@ -103,9 +101,6 @@ function app_pagina_url(int $p): string {
                     <td class="text-muted small"><?= h($a['locatie'] ?: '—') ?></td>
                     <td><span class="badge badge-<?= $a['status'] ?> rounded-pill" style="font-size:10px;"><?= h($a['status']) ?></span></td>
                     <td class="text-end">
-                        <a href="<?= $base ?>/qr/labels.php?apparaat_id=<?= $a['id'] ?>" class="btn btn-sm btn-outline-secondary" target="_blank" title="QR-label">
-                            <i class="ri-qr-code-line"></i>
-                        </a>
                         <a href="<?= $base ?>/klanten/detail.php?id=<?= $a['klant_id'] ?>&tab=apparaten" class="btn btn-sm btn-outline-secondary">
                             <i class="ri-eye-line"></i>
                         </a>

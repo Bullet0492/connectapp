@@ -40,15 +40,14 @@ if ($apparaat_id) {
         ip_adres=:ip_adres, firmware=:firmware, status=:status, notities=:notities
         WHERE id=:id AND klant_id=:klant_id")
        ->execute(array_merge($data, ['id' => $apparaat_id]));
-    log_actie('apparaat_bijgewerkt', 'QR: ' . $apparaat_id . ', Klant ID: ' . $klant_id);
+    log_actie('apparaat_bijgewerkt', 'Apparaat ID: ' . $apparaat_id . ', Klant ID: ' . $klant_id);
     flash_set('succes', 'Apparaat bijgewerkt.');
 } else {
-    $data['qr_code'] = volgende_qr_nummer();
-    db()->prepare("INSERT INTO apparaten (klant_id,qr_code,type,merk,model,serienummer,aanschafdatum,garantie_tot,locatie,mac_adres,ip_adres,firmware,status,notities)
-        VALUES (:klant_id,:qr_code,:type,:merk,:model,:serienummer,:aanschafdatum,:garantie_tot,:locatie,:mac_adres,:ip_adres,:firmware,:status,:notities)")
+    db()->prepare("INSERT INTO apparaten (klant_id,type,merk,model,serienummer,aanschafdatum,garantie_tot,locatie,mac_adres,ip_adres,firmware,status,notities)
+        VALUES (:klant_id,:type,:merk,:model,:serienummer,:aanschafdatum,:garantie_tot,:locatie,:mac_adres,:ip_adres,:firmware,:status,:notities)")
        ->execute($data);
-    log_actie('apparaat_aangemaakt', 'QR: ' . $data['qr_code'] . ', Klant ID: ' . $klant_id);
-    flash_set('succes', 'Apparaat toegevoegd. QR-code: ' . $data['qr_code']);
+    log_actie('apparaat_aangemaakt', 'Klant ID: ' . $klant_id);
+    flash_set('succes', 'Apparaat toegevoegd.');
 }
 
 header('Location: ' . basis_url() . '/klanten/detail.php?id=' . $klant_id . '&tab=apparaten');

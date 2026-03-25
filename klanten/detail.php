@@ -33,7 +33,7 @@ $notities = $db->prepare('SELECT * FROM klant_notities WHERE klant_id = ? ORDER 
 $notities->execute([$id]);
 $notities = $notities->fetchAll();
 
-$service = $db->prepare("SELECT s.*, a.qr_code AS apparaat_qr FROM service_historie s LEFT JOIN apparaten a ON a.id = s.apparaat_id WHERE s.klant_id = ? ORDER BY s.datum DESC, s.id DESC");
+$service = $db->prepare("SELECT s.* FROM service_historie s WHERE s.klant_id = ? ORDER BY s.datum DESC, s.id DESC");
 $service->execute([$id]);
 $service = $service->fetchAll();
 
@@ -404,14 +404,7 @@ require_once __DIR__ . '/../includes/header.php';
 <?php elseif ($actieve_tab === 'apparaten'): ?>
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h6 class="fw-bold mb-0">Apparaten</h6>
-    <div class="d-flex gap-2">
-        <?php if (!empty($apparaten)): ?>
-        <a href="<?= $base ?>/qr/labels.php?klant_id=<?= $id ?>" class="btn btn-outline-secondary btn-sm" target="_blank">
-            <i class="ri-printer-line"></i> Labels afdrukken
-        </a>
-        <?php endif; ?>
-        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalApparaat">+ Toevoegen</button>
-    </div>
+    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalApparaat">+ Toevoegen</button>
 </div>
 <?php if (empty($apparaten)): ?>
     <div class="bg-white rounded-3 border p-4 text-center text-muted">Nog geen apparaten.</div>
@@ -422,13 +415,9 @@ require_once __DIR__ . '/../includes/header.php';
         <div class="bg-white rounded-3 border p-3">
             <div class="d-flex justify-content-between align-items-start mb-2">
                 <div>
-                    <span class="fw-bold" style="font-size:15px;"><?= h($a['qr_code']) ?></span>
-                    <span class="badge badge-<?= $a['status'] ?> ms-2 rounded-pill" style="font-size:10px;"><?= h($a['status']) ?></span>
+                    <span class="badge badge-<?= $a['status'] ?> rounded-pill" style="font-size:10px;"><?= h($a['status']) ?></span>
                 </div>
                 <div class="d-flex gap-1">
-                    <a href="<?= $base ?>/qr/labels.php?apparaat_id=<?= $a['id'] ?>" class="btn btn-sm btn-outline-secondary" target="_blank" title="Label afdrukken">
-                        <i class="ri-qr-code-line"></i>
-                    </a>
                     <button class="btn btn-sm btn-outline-secondary" onclick="bewerkApparaat(<?= htmlspecialchars(json_encode($a), ENT_QUOTES) ?>)">
                         <i class="ri-edit-line"></i>
                     </button>
@@ -770,9 +759,6 @@ foreach ($service as $s):
                     <span class="badge rounded-pill" style="font-size:10px;background:<?= $type_kleuren[$s['type']] ?? '#adb5bd' ?>20;color:<?= $type_kleuren[$s['type']] ?? '#adb5bd' ?>;border:1px solid <?= $type_kleuren[$s['type']] ?? '#adb5bd' ?>40;">
                         <?= $type_labels[$s['type']] ?? $s['type'] ?>
                     </span>
-                    <?php if (!empty($s['apparaat_qr'])): ?>
-                    <span class="badge bg-light text-muted border" style="font-size:10px;"><?= h($s['apparaat_qr']) ?></span>
-                    <?php endif; ?>
                 </div>
                 <p class="mb-0 small" style="white-space:pre-line;"><?= h($s['omschrijving']) ?></p>
                 <?php if (!empty($s['opgelost_door'])): ?>
@@ -827,7 +813,7 @@ foreach ($service as $s):
                             <select name="apparaat_id" id="sv_apparaat_id" class="form-select rounded-3">
                                 <option value="">— Niet gekoppeld aan apparaat —</option>
                                 <?php foreach ($apparaten as $a): ?>
-                                <option value="<?= $a['id'] ?>"><?= h($a['qr_code'] . ' — ' . trim($a['merk'] . ' ' . $a['model'])) ?></option>
+                                <option value="<?= $a['id'] ?>"><?= h(trim($a['merk'] . ' ' . $a['model']) ?: 'Apparaat #' . $a['id']) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
