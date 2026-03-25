@@ -949,7 +949,6 @@ $iconen = ['pdf' => 'ri-file-pdf-line', 'docx' => 'ri-file-word-line', 'doc' => 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h6 class="fw-bold mb-0">Microsoft Office 365</h6>
     <div class="d-flex gap-2">
-        <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#modalO365Licentie" onclick="resetLicentieModal()">+ Licentie</button>
         <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#modalO365Gebruiker" onclick="resetGebruikerModal()">+ Gebruiker</button>
         <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalO365">
             <?= $o365 ? '<i class="ri-edit-line"></i> Tenant' : '+ Toevoegen' ?>
@@ -1001,29 +1000,32 @@ $iconen = ['pdf' => 'ri-file-pdf-line', 'docx' => 'ri-file-word-line', 'doc' => 
             </a>
         </div>
     </div>
-    <!-- Licenties -->
+    <!-- Licenties (opgeteld vanuit gebruikers) -->
+    <?php
+    $lic_samenvatting = [];
+    foreach ($o365_gebruikers as $gu) {
+        if (!empty($gu['licentie_type'])) {
+            $lic_samenvatting[$gu['licentie_type']] = ($lic_samenvatting[$gu['licentie_type']] ?? 0) + 1;
+        }
+    }
+    ?>
     <div class="col-md-6">
         <div class="bg-white rounded-3 border p-3">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-                <h6 class="fw-semibold mb-0">Licenties</h6>
-                <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modalO365Licentie" onclick="resetLicentieModal()"><i class="ri-add-line"></i></button>
-            </div>
-            <?php if (empty($o365_licenties)): ?>
-            <p class="text-muted small mb-0">Nog geen licenties.</p>
+            <h6 class="fw-semibold mb-2">Licenties</h6>
+            <?php if (empty($lic_samenvatting)): ?>
+            <p class="text-muted small mb-0">Nog geen licenties toegewezen aan gebruikers.</p>
             <?php else: ?>
             <table class="table table-sm table-borderless mb-0">
-                <?php foreach ($o365_licenties as $lic): ?>
+                <?php foreach ($lic_samenvatting as $type => $aantal): ?>
                 <tr>
-                    <td style="font-size:13px;"><?= h($lic['licentie_type']) ?></td>
-                    <td class="text-muted" style="font-size:13px;width:50px;"><?= (int)$lic['aantal'] ?>x</td>
-                    <td class="text-end" style="width:60px;">
-                        <button class="btn btn-sm p-0 text-muted me-1" onclick="bewerkLicentie(<?= htmlspecialchars(json_encode($lic), ENT_QUOTES) ?>)"><i class="ri-edit-line" style="font-size:13px;"></i></button>
-                        <?php if ($gebruiker['rol'] === 'admin'): ?>
-                        <a href="<?= $base ?>/o365/licentie_verwijderen.php?id=<?= $lic['id'] ?>&klant_id=<?= $id ?>" onclick="return confirm('Verwijderen?')" class="btn btn-sm p-0 text-danger"><i class="ri-delete-bin-line" style="font-size:13px;"></i></a>
-                        <?php endif; ?>
-                    </td>
+                    <td style="font-size:13px;"><?= h($type) ?></td>
+                    <td class="text-muted fw-semibold" style="font-size:13px;width:40px;"><?= $aantal ?>x</td>
                 </tr>
                 <?php endforeach; ?>
+                <tr class="border-top">
+                    <td class="text-muted" style="font-size:12px;">Totaal</td>
+                    <td class="fw-bold" style="font-size:12px;"><?= count($o365_gebruikers) ?></td>
+                </tr>
             </table>
             <?php endif; ?>
         </div>
@@ -1043,7 +1045,10 @@ $iconen = ['pdf' => 'ri-file-pdf-line', 'docx' => 'ri-file-word-line', 'doc' => 
                 <div class="flex-grow-1" style="min-width:0;">
                     <div class="fw-medium" style="font-size:13px;"><?= h($gu['naam']) ?></div>
                     <div class="text-muted" style="font-size:12px;"><?= h($gu['email']) ?></div>
-                    <?php if (!empty($gu['rol'])): ?><span class="badge bg-light text-muted border" style="font-size:10px;"><?= h($gu['rol']) ?></span><?php endif; ?>
+                    <div class="d-flex gap-1 flex-wrap mt-1">
+                        <?php if (!empty($gu['rol'])): ?><span class="badge bg-light text-muted border" style="font-size:10px;"><?= h($gu['rol']) ?></span><?php endif; ?>
+                        <?php if (!empty($gu['licentie_type'])): ?><span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25" style="font-size:10px;"><?= h($gu['licentie_type']) ?></span><?php endif; ?>
+                    </div>
                 </div>
                 <div class="d-flex flex-column gap-1 flex-shrink-0">
                     <?php if (!empty($gu['wachtwoord_enc'])): ?>
@@ -1191,7 +1196,7 @@ $iconen = ['pdf' => 'ri-file-pdf-line', 'docx' => 'ri-file-word-line', 'doc' => 
                                 <button type="button" class="btn btn-outline-secondary" onclick="toggleVeld('gu_ww', this)"><i class="ri-eye-line"></i></button>
                             </div>
                         </div>
-                        <div class="col-12">
+                        <div class="col-12 col-md-6">
                             <label class="form-label fw-medium">Rol</label>
                             <select name="rol" id="gu_rol" class="form-select rounded-3">
                                 <option value="Gebruiker">Gebruiker</option>
@@ -1199,6 +1204,23 @@ $iconen = ['pdf' => 'ri-file-pdf-line', 'docx' => 'ri-file-word-line', 'doc' => 
                                 <option value="Gebruikersbeheerder">Gebruikersbeheerder</option>
                                 <option value="Factureringsbeheerder">Factureringsbeheerder</option>
                                 <option value="Helpdesk beheerder">Helpdesk beheerder</option>
+                                <option value="Overig">Overig</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-medium">Licentie</label>
+                            <select name="licentie_type" id="gu_licentie" class="form-select rounded-3">
+                                <option value="">Geen / onbekend</option>
+                                <option value="Microsoft 365 Business Basic">M365 Business Basic</option>
+                                <option value="Microsoft 365 Business Standard">M365 Business Standard</option>
+                                <option value="Microsoft 365 Business Premium">M365 Business Premium</option>
+                                <option value="Microsoft 365 E3">Microsoft 365 E3</option>
+                                <option value="Microsoft 365 E5">Microsoft 365 E5</option>
+                                <option value="Office 365 E1">Office 365 E1</option>
+                                <option value="Office 365 E3">Office 365 E3</option>
+                                <option value="Exchange Online Plan 1">Exchange Online Plan 1</option>
+                                <option value="Exchange Online Plan 2">Exchange Online Plan 2</option>
+                                <option value="Microsoft Teams Essentials">Teams Essentials</option>
                                 <option value="Overig">Overig</option>
                             </select>
                         </div>
@@ -1793,21 +1815,23 @@ function bewerkLicentie(lic) {
 // ─── O365 gebruiker modal ─────────────────────────────────────────────────────
 function resetGebruikerModal() {
     document.getElementById('gebruikerModalTitel').textContent = 'Gebruiker toevoegen';
-    document.getElementById('gu_id').value       = '';
-    document.getElementById('gu_naam').value     = '';
-    document.getElementById('gu_email').value    = '';
-    document.getElementById('gu_ww').value       = '';
-    document.getElementById('gu_rol').value      = 'Gebruiker';
-    document.getElementById('gu_notities').value = '';
+    document.getElementById('gu_id').value          = '';
+    document.getElementById('gu_naam').value        = '';
+    document.getElementById('gu_email').value       = '';
+    document.getElementById('gu_ww').value          = '';
+    document.getElementById('gu_rol').value         = 'Gebruiker';
+    document.getElementById('gu_licentie').value    = '';
+    document.getElementById('gu_notities').value    = '';
 }
 function bewerkGebruiker(gu) {
     document.getElementById('gebruikerModalTitel').textContent = 'Gebruiker bewerken';
-    document.getElementById('gu_id').value       = gu.id;
-    document.getElementById('gu_naam').value     = gu.naam || '';
-    document.getElementById('gu_email').value    = gu.email || '';
-    document.getElementById('gu_ww').value       = '';
-    document.getElementById('gu_rol').value      = gu.rol || 'Gebruiker';
-    document.getElementById('gu_notities').value = gu.notities || '';
+    document.getElementById('gu_id').value          = gu.id;
+    document.getElementById('gu_naam').value        = gu.naam || '';
+    document.getElementById('gu_email').value       = gu.email || '';
+    document.getElementById('gu_ww').value          = '';
+    document.getElementById('gu_rol').value         = gu.rol || 'Gebruiker';
+    document.getElementById('gu_licentie').value    = gu.licentie_type || '';
+    document.getElementById('gu_notities').value    = gu.notities || '';
     new bootstrap.Modal(document.getElementById('modalO365Gebruiker')).show();
 }
 
