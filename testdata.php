@@ -173,6 +173,65 @@ try {
     ok(count($contracten) . ' contracten aangemaakt');
 } catch (Exception $e) { err('Contracten: ' . $e->getMessage()); }
 
+// ─── Office 365 ──────────────────────────────────────────────────────────────
+$o365_data = [
+    [$klant_ids[1], 'garagesmit',     'garagesmit.onmicrosoft.com', 'a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'admin@garagesmit.nl', 'M365!Admin#Smit2024',    'Microsoft 365 Business Premium', 5,  1, 1, "5x Business Premium\nMFA verplicht voor alle gebruikers\nConditional Access: blokkeer toegang buiten NL"],
+    [$klant_ids[2], 'jansenpraktijk', 'jansenpraktijk.onmicrosoft.com','b2c3d4e5-f6a7-8901-bcde-f12345678901','praktijk@jansen-tand.nl','O365!Tandarts#2024',  'Microsoft 365 Business Standard', 3, 1, 0, "3x Business Standard\nMFA ingeschakeld\nIntune MDM voor MacBooks"],
+    [$klant_ids[3], 'vandijktransport','vandijktransport.onmicrosoft.com','c3d4e5f6-a7b8-9012-cdef-123456789012','rob@vandijktransport.nl','Azure$M365!VanDijk','Microsoft 365 E3',               12, 1, 1, "12x E3 licenties\nConditional Access + Intune\nAzure AD Connect met lokaal AD"],
+];
+try {
+    foreach ($o365_data as $o) {
+        $enc = encrypt_wachtwoord($o[5]);
+        $db->prepare('INSERT INTO klant_o365 (klant_id, tenant_naam, tenant_id, admin_email, admin_wachtwoord_enc, licentie_type, aantal_licenties, mfa_actief, conditional_access, notities) VALUES (?,?,?,?,?,?,?,?,?,?)')
+           ->execute([$o[0], $o[2], $o[3], $o[4], $enc, $o[6], $o[7], $o[8], $o[9], $o[10]]);
+    }
+    ok(count($o365_data) . ' Office 365 records aangemaakt');
+} catch (Exception $e) { err('Office 365: ' . $e->getMessage()); }
+
+// ─── Yeastar centralen ────────────────────────────────────────────────────────
+$yeastar_data = [
+    [$klant_ids[0], 'S-Series S100',   '192.168.1.200', '8088', 'https://192.168.1.200:8088', 'admin', 'Yeastar!Bakkerij#24', '30.13.0.18', "8 extensies actief\nVoicemailbox ingesteld voor Henk"],
+    [$klant_ids[3], 'P-Series P560',   '10.10.0.50',    '8086', 'https://10.10.0.50:8086',   'admin', 'Forti!PBX#VanDijk23', '84.12.0.10', "28 extensies\nIntegratie met CRM actief\nSIP-trunk via KPN"],
+    [$klant_ids[3], 'Cloud PBX',       '',              '',     'https://pbx.yeastar.cloud',  'admin', 'Cloud!PBX#Backup22',  '',           "Backup/uitwijkcentrale\nActief bij storing on-premise"],
+];
+try {
+    foreach ($yeastar_data as $y) {
+        $enc = encrypt_wachtwoord($y[6]);
+        $db->prepare('INSERT INTO klant_yeastar (klant_id, model, ip_adres, poort, admin_url, admin_gebruiker, admin_wachtwoord_enc, firmware, notities) VALUES (?,?,?,?,?,?,?,?,?)')
+           ->execute([$y[0], $y[1], $y[2], $y[3], $y[4], $y[5], $enc, $y[7], $y[8]]);
+    }
+    ok(count($yeastar_data) . ' Yeastar centralen aangemaakt');
+} catch (Exception $e) { err('Yeastar: ' . $e->getMessage()); }
+
+// ─── Simpbx ───────────────────────────────────────────────────────────────────
+$simpbx_data = [
+    [$klant_ids[1], 1, 8,  'smit.simpbx.nl',      'https://pbx.simpbx.nl/smit',    'smit_admin', 'Simpbx!Smit#2024',   "8 extensies\nBelgroepen: Balie, Werkplaats\nOpeningstijden ingesteld"],
+    [$klant_ids[2], 1, 4,  'jansen.simpbx.nl',    'https://pbx.simpbx.nl/jansen',  'jansen_adm', 'Simpbx!Jansen#24',   "4 extensies\nWachtrij patiënten ingesteld\nHerinnering: AVG-compliance check jaarlijks"],
+];
+try {
+    foreach ($simpbx_data as $s) {
+        $enc = encrypt_wachtwoord($s[6]);
+        $db->prepare('INSERT INTO klant_simpbx (klant_id, actief, aantal_extensies, sip_domein, admin_url, admin_gebruiker, admin_wachtwoord_enc, notities) VALUES (?,?,?,?,?,?,?,?)')
+           ->execute([$s[0], $s[1], $s[2], $s[3], $s[4], $s[5], $enc, $s[7]]);
+    }
+    ok(count($simpbx_data) . ' Simpbx records aangemaakt');
+} catch (Exception $e) { err('Simpbx: ' . $e->getMessage()); }
+
+// ─── Internet ─────────────────────────────────────────────────────────────────
+$internet_data = [
+    [$klant_ids[0], 'Routit',  '',          'Glasvezel', '500', '500', '85.144.12.34',  '2026-12-31', "Symmetrisch glasvezel 500/500\nVast IP-adres inbegrepen\nSLA: 4 uur herstel"],
+    [$klant_ids[1], 'Pocos',   '',          'DSL/VDSL',  '200', '30',  '',              '2027-03-01', "VDSL2+ verbinding\nDynamisch IP via PPPoE\nBack-up via 4G router (Teltonika)"],
+    [$klant_ids[2], 'KPN',     '',          'Glasvezel', '1000','1000','85.145.87.201', '2027-06-30', "Glasvezel 1Gbit zakelijk\nVast IP voor VPN-toegang\nRedundante verbinding via Ziggo"],
+    [$klant_ids[3], 'Anders',  'Colt Telecom','Lease line','100','100','212.118.33.50', '2028-01-01', "Dedicated 100Mbit lease line\nSLA: 99.9% uptime garantie\nMonitoring via NOC Colt"],
+];
+try {
+    foreach ($internet_data as $i) {
+        $db->prepare('INSERT INTO klant_internet (klant_id, provider, provider_anders, type, snelheid_down, snelheid_up, ip_adres, contract_datum, notities) VALUES (?,?,?,?,?,?,?,?,?)')
+           ->execute([$i[0], $i[1], $i[2], $i[3], $i[4], $i[5], $i[6], $i[7] ?: null, $i[8]]);
+    }
+    ok(count($internet_data) . ' internet-records aangemaakt');
+} catch (Exception $e) { err('Internet: ' . $e->getMessage()); }
+
 echo '</div><hr>';
 echo '<div class="alert alert-success mt-3"><strong>Klaar!</strong> Ga naar <a href="index.php">het dashboard</a>.</div>';
 echo '<div class="alert alert-warning"><strong>Geef een seintje</strong> — dan wordt testdata.php weer geblokkeerd.</div>';
