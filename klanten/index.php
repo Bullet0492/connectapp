@@ -31,6 +31,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 WHERE id=:id")->execute(array_merge($data, ['id' => $bewerken_id]));
             log_actie('klant_bijgewerkt', 'Naam: ' . $data['naam'] . ', ID: ' . $bewerken_id);
             flash_set('succes', 'Klant bijgewerkt.');
+            header('Location: detail.php?id=' . $bewerken_id);
+            exit;
         } else {
             $db->prepare("INSERT INTO klanten (naam,bedrijf,adres,postcode,stad,telefoon,email,website,intra_id,notities,vps,beheerder)
                 VALUES (:naam,:bedrijf,:adres,:postcode,:stad,:telefoon,:email,:website,:intra_id,:notities,:vps,:beheerder)")

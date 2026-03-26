@@ -182,6 +182,24 @@ require_once __DIR__ . '/../includes/header.php';
 </ul>
 
 <!-- ─── Tab: Overzicht ────────────────────────────────────────────────────── -->
+<?php
+// Vaste kleuren per beheerder [achtergrond, tekst/icoon]
+$beheerder_kleuren = [
+    'Connect4IT'      => ['#f0f7ff', '#185E9B'],
+    'Lars Manders'    => ['#fff4f0', '#e8621a'],
+    'Frank Lendering' => ['#f0fff4', '#198754'],
+    'Bitcom'          => ['#fff8e1', '#e6a817'],
+    'Kirkels'         => ['#fdf0ff', '#9c27b0'],
+    'Academy'         => ['#e8f5e9', '#2e7d32'],
+];
+function beheerder_kleur($naam, $kleuren) {
+    if (isset($kleuren[$naam])) return $kleuren[$naam];
+    // Vrije tekst: genereer kleur op basis van hash
+    $hash = crc32($naam);
+    $hue  = abs($hash) % 360;
+    return ["hsl($hue,60%,94%)", "hsl($hue,55%,35%)"];
+}
+?>
 <?php if ($actieve_tab === 'overzicht'): ?>
 <div class="row g-3">
     <!-- Contactinformatie -->
@@ -210,12 +228,13 @@ require_once __DIR__ . '/../includes/header.php';
         <div class="bg-white rounded-3 border p-4 h-100">
             <?php if (!empty($klant['beheerder']) || !empty($klant['vps'])): ?>
             <div class="d-flex gap-3 flex-wrap mb-4">
-                <?php if (!empty($klant['beheerder'])): ?>
-                <div class="d-flex align-items-center gap-2 px-3 py-2 rounded-3 flex-fill" style="background:#f5f0ff;min-width:120px;">
-                    <i class="ri-user-settings-line" style="color:#6f42c1;font-size:20px;flex-shrink:0;"></i>
+                <?php if (!empty($klant['beheerder'])):
+                    [$bg, $fg] = beheerder_kleur($klant['beheerder'], $beheerder_kleuren); ?>
+                <div class="d-flex align-items-center gap-2 px-3 py-2 rounded-3 flex-fill" style="background:<?= $bg ?>;min-width:120px;">
+                    <i class="ri-user-settings-line" style="color:<?= $fg ?>;font-size:20px;flex-shrink:0;"></i>
                     <div>
                         <div style="font-size:10px;color:#6c757d;text-transform:uppercase;letter-spacing:.5px;">Beheerder</div>
-                        <div class="fw-bold" style="font-size:13px;color:#6f42c1;"><?= h($klant['beheerder']) ?></div>
+                        <div class="fw-bold" style="font-size:13px;color:<?= $fg ?>;"><?= h($klant['beheerder']) ?></div>
                     </div>
                 </div>
                 <?php endif; ?>
