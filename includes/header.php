@@ -141,7 +141,8 @@ $base = basis_url();
 <div class="sidebar" id="sidebar">
     <div class="sidebar-logo">
         <a href="<?= $base ?>/klanten/index.php" class="d-flex align-items-center gap-2 text-decoration-none">
-            <img src="<?= $base ?>/images/logo.png" alt="Connect4IT" style="height:40px;" onerror="this.style.display='none'">
+            <img src="<?= $base ?>/images/logo.png" alt="Connect4IT" style="height:36px;" onerror="this.style.display='none'">
+            <span style="font-size:15px;font-weight:700;color:#185E9B;letter-spacing:.3px;">Connect4IT</span>
         </a>
     </div>
     <ul class="sidebar-nav">

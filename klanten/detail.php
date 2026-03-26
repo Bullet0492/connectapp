@@ -202,10 +202,16 @@ require_once __DIR__ . '/../includes/header.php';
                 <tr><td class="text-muted">Website</td><td><a href="<?= h($klant['website']) ?>" target="_blank"><?= h($klant['website']) ?></a></td></tr>
                 <?php endif; ?>
                 <?php if (!empty($klant['vps'])): ?>
-                <tr><td class="text-muted">VPS</td><td><i class="ri-server-line me-1 text-muted"></i><?= h($klant['vps']) ?></td></tr>
+                <tr style="background:#f0f7ff;">
+                    <td class="text-muted fw-semibold" style="padding-top:8px;padding-bottom:8px;">VPS</td>
+                    <td style="padding-top:8px;padding-bottom:8px;"><i class="ri-server-line me-1" style="color:#185E9B;"></i><strong><?= h($klant['vps']) ?></strong></td>
+                </tr>
                 <?php endif; ?>
                 <?php if (!empty($klant['beheerder'])): ?>
-                <tr><td class="text-muted">Beheerder</td><td><i class="ri-user-settings-line me-1 text-muted"></i><?= h($klant['beheerder']) ?></td></tr>
+                <tr style="background:#f5f0ff;">
+                    <td class="text-muted fw-semibold" style="padding-top:8px;padding-bottom:8px;">Beheerder</td>
+                    <td style="padding-top:8px;padding-bottom:8px;"><i class="ri-user-settings-line me-1" style="color:#6f42c1;"></i><strong><?= h($klant['beheerder']) ?></strong></td>
+                </tr>
                 <?php endif; ?>
             </table>
         </div>
@@ -1388,14 +1394,14 @@ $iconen = ['pdf' => 'ri-file-pdf-line', 'docx' => 'ri-file-word-line', 'doc' => 
 
 <?php if (!empty($simpbx['actief'])): ?>
 <div class="bg-white rounded-3 border p-4 mb-3" style="max-width:500px;">
-    <h6 class="fw-bold mb-3 d-flex align-items-center gap-2"><img src="https://benfmedia.simpbx.net/favicon.ico" height="20" alt="SimPBX" style="object-fit:contain;" onerror="this.style.display='none'"> SimPBX</h6>
+    <h6 class="fw-bold mb-3" style="color:#2563eb;">SimPBX</h6>
     <p class="text-muted small mb-0">Klant maakt gebruik van onze eigen SimPBX telefooncentrale.</p>
 </div>
 <?php endif; ?>
 
 <?php if (!empty($ziggo['actief'])): ?>
 <div class="bg-white rounded-3 border p-4 mb-3" style="max-width:500px;">
-    <h6 class="fw-bold mb-3 d-flex align-items-center gap-2"><img src="https://vodafoneziggo.scene7.com/is/content/vodafoneziggo/ziggo-logo-orange-v1" height="18" alt="Ziggo" style="object-fit:contain;"> Ziggo</h6>
+    <h6 class="fw-bold mb-3"><img src="https://vodafoneziggo.scene7.com/is/content/vodafoneziggo/ziggo-logo-orange-v1" height="18" alt="Ziggo" style="object-fit:contain;"></h6>
     <p class="text-muted small mb-0">Klant maakt gebruik van Ziggo telefonie.</p>
 </div>
 <?php endif; ?>
