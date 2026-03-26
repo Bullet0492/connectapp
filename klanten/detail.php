@@ -207,29 +207,30 @@ require_once __DIR__ . '/../includes/header.php';
 
     <!-- Samenvatting + VPS/Beheerder -->
     <div class="col-md-6">
-        <?php if (!empty($klant['vps']) || !empty($klant['beheerder'])): ?>
-        <div class="bg-white rounded-3 border p-3 mb-3 d-flex gap-3 flex-wrap">
-            <?php if (!empty($klant['vps'])): ?>
-            <div class="d-flex align-items-center gap-2 px-3 py-2 rounded-3" style="background:#f0f7ff;">
-                <i class="ri-server-line" style="color:#185E9B;font-size:18px;"></i>
-                <div>
-                    <div style="font-size:10px;color:#6c757d;text-transform:uppercase;letter-spacing:.5px;">VPS</div>
-                    <div class="fw-bold" style="font-size:13px;color:#185E9B;"><?= h($klant['vps']) ?></div>
+        <div class="bg-white rounded-3 border p-4 h-100">
+            <?php if (!empty($klant['beheerder']) || !empty($klant['vps'])): ?>
+            <div class="d-flex gap-3 flex-wrap mb-4">
+                <?php if (!empty($klant['beheerder'])): ?>
+                <div class="d-flex align-items-center gap-2 px-3 py-2 rounded-3 flex-fill" style="background:#f5f0ff;min-width:120px;">
+                    <i class="ri-user-settings-line" style="color:#6f42c1;font-size:20px;flex-shrink:0;"></i>
+                    <div>
+                        <div style="font-size:10px;color:#6c757d;text-transform:uppercase;letter-spacing:.5px;">Beheerder</div>
+                        <div class="fw-bold" style="font-size:13px;color:#6f42c1;"><?= h($klant['beheerder']) ?></div>
+                    </div>
                 </div>
-            </div>
-            <?php endif; ?>
-            <?php if (!empty($klant['beheerder'])): ?>
-            <div class="d-flex align-items-center gap-2 px-3 py-2 rounded-3" style="background:#f5f0ff;">
-                <i class="ri-user-settings-line" style="color:#6f42c1;font-size:18px;"></i>
-                <div>
-                    <div style="font-size:10px;color:#6c757d;text-transform:uppercase;letter-spacing:.5px;">Beheerder</div>
-                    <div class="fw-bold" style="font-size:13px;color:#6f42c1;"><?= h($klant['beheerder']) ?></div>
+                <?php endif; ?>
+                <?php if (!empty($klant['vps'])): ?>
+                <div class="d-flex align-items-center gap-2 px-3 py-2 rounded-3 flex-fill" style="background:#f0f7ff;min-width:120px;">
+                    <i class="ri-server-line" style="color:#185E9B;font-size:20px;flex-shrink:0;"></i>
+                    <div>
+                        <div style="font-size:10px;color:#6c757d;text-transform:uppercase;letter-spacing:.5px;">VPS</div>
+                        <div class="fw-bold" style="font-size:13px;color:#185E9B;"><?= h($klant['vps']) ?></div>
+                    </div>
                 </div>
+                <?php endif; ?>
             </div>
+            <hr class="my-0 mb-3">
             <?php endif; ?>
-        </div>
-        <?php endif; ?>
-        <div class="bg-white rounded-3 border p-4">
             <h6 class="fw-bold mb-3">Samenvatting</h6>
             <div class="d-flex flex-column gap-2">
                 <div class="d-flex justify-content-between">
