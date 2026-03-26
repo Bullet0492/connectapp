@@ -22,66 +22,113 @@ $scan_url = $base_url . '/qr/klant.php?id=' . $id;
 <head>
     <meta charset="UTF-8">
     <title>QR-label - <?= h($klant['naam']) ?></title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <style>
-        body { background: #f8f9fa; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
-        @media print {
-            @page { size: 101mm 54mm landscape; margin: 0; }
-            body { background: #fff; }
-            .no-print { display: none !important; }
+        body { background: #f0f0f0; font-family: Arial, sans-serif; }
+
+        .toolbar {
+            background: #fff;
+            border-bottom: 1px solid #ddd;
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .toolbar strong { font-size: 14px; }
+        .btn {
+            padding: 5px 14px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            cursor: pointer;
+            font-size: 13px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn-primary { background: #185E9B; color: #fff; border-color: #185E9B; }
+        .btn-secondary { background: #fff; color: #333; }
+
+        .preview {
+            padding: 20px;
         }
 
+        /* ── Label ── */
         .label-card {
             width: 101mm;
             height: 54mm;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            padding: 5mm;
             background: #fff;
+            border: 1px solid #bbb;
+            border-radius: 3px;
             display: flex;
             flex-direction: row;
             align-items: center;
+            padding: 4mm 5mm;
             gap: 5mm;
-            font-family: Arial, sans-serif;
-            box-sizing: border-box;
         }
 
         .label-qr { flex-shrink: 0; }
-        .label-qr img, .label-qr canvas { width: 38mm !important; height: 38mm !important; display: block; }
+        .label-qr canvas, .label-qr img {
+            width: 40mm !important;
+            height: 40mm !important;
+            display: block;
+        }
 
         .label-info {
             display: flex;
             flex-direction: column;
             justify-content: center;
-            gap: 2mm;
+            gap: 2.5mm;
         }
 
         .label-titel {
-            font-size: 13pt;
+            font-size: 15pt;
             font-weight: bold;
             color: #185E9B;
-            letter-spacing: .3px;
         }
 
         .label-sub {
-            font-size: 9pt;
-            color: #444;
-            line-height: 1.5;
+            font-size: 9.5pt;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        /* ── Print ── */
+        @media print {
+            @page {
+                size: 101mm 54mm;
+                margin: 0;
+            }
+
+            html, body {
+                width: 101mm;
+                height: 54mm;
+                overflow: hidden;
+                background: #fff;
+            }
+
+            .toolbar { display: none !important; }
+            .preview { padding: 0 !important; }
+
+            .label-card {
+                border: none;
+                border-radius: 0;
+                width: 101mm !important;
+                height: 54mm !important;
+            }
         }
     </style>
 </head>
 <body>
 
-<div class="no-print p-3 border-bottom bg-white d-flex align-items-center gap-3">
-    <strong>QR-label klant: <?= h($klant['naam']) ?></strong>
-    <button onclick="window.print()" class="btn btn-primary btn-sm">Afdrukken</button>
-    <a href="<?= $base_url ?>/klanten/detail.php?id=<?= $id ?>" class="btn btn-outline-secondary btn-sm">← Terug</a>
+<div class="toolbar">
+    <strong>QR-label: <?= h($klant['naam']) ?></strong>
+    <button onclick="window.print()" class="btn btn-primary">Afdrukken</button>
+    <a href="<?= $base_url ?>/klanten/detail.php?id=<?= $id ?>" class="btn btn-secondary">← Terug</a>
 </div>
 
-<div class="p-4">
-    <div class="label-card" id="label-klant">
+<div class="preview">
+    <div class="label-card">
         <div class="label-qr" id="qr-klant"></div>
         <div class="label-info">
             <div class="label-titel">Connect4IT</div>
@@ -94,8 +141,8 @@ $scan_url = $base_url . '/qr/klant.php?id=' . $id;
 document.addEventListener('DOMContentLoaded', function() {
     new QRCode(document.getElementById('qr-klant'), {
         text: '<?= addslashes($scan_url) ?>',
-        width: 144,
-        height: 144,
+        width: 151,
+        height: 151,
         correctLevel: QRCode.CorrectLevel.M
     });
 });
