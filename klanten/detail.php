@@ -185,8 +185,8 @@ require_once __DIR__ . '/../includes/header.php';
 <?php
 // Vaste kleuren per beheerder [achtergrond, tekst/icoon]
 $beheerder_kleuren = [
-    'Connect4IT'      => ['#f0f7ff', '#185E9B'],
-    'Lars Manders'    => ['#fff4f0', '#e8621a'],
+    'Connect4IT'      => ['#fff4f0', '#e8621a'],
+    'Lars Manders'    => ['#f0f7ff', '#185E9B'],
     'Frank Lendering' => ['#f0fff4', '#198754'],
     'Bitcom'          => ['#fff8e1', '#e6a817'],
     'Kirkels'         => ['#fdf0ff', '#9c27b0'],
