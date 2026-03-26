@@ -2,7 +2,7 @@
     "name": "Connect4IT",
     "short_name": "Connect4IT",
     "description": "Connect4IT klanten & QR scanner",
-    "start_url": "/app/qr/scan.php",
+    "start_url": "/app/klanten/index.php",
     "scope": "/app/",
     "display": "standalone",
     "background_color": "#ffffff",

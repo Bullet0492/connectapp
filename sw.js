@@ -1,20 +1,14 @@
-const CACHE = 'connect4it-v1';
+// Service worker — alleen aanwezig voor PWA-installeerbaarheid
+// Geen caching: altijd verse data van de server
 
-// Bij installatie: sla de offline fallback op
-self.addEventListener('install', function(e) {
+self.addEventListener('install', function() {
     self.skipWaiting();
 });
 
-self.addEventListener('activate', function(e) {
+self.addEventListener('activate', function() {
     self.clients.claim();
 });
 
-// Network-first strategie: altijd verse data van de server
-self.addEventListener('fetch', function(e) {
-    if (e.request.method !== 'GET') return;
-    e.respondWith(
-        fetch(e.request).catch(function() {
-            return caches.match(e.request);
-        })
-    );
-});
+// Fetch-handler vereist voor installeerbaarheid
+// Doet niets: browser handelt requests normaal af
+self.addEventListener('fetch', function() {});
