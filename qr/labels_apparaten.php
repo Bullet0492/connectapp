@@ -62,22 +62,22 @@ $base_url = basis_url();
 
         /* ── Label ── */
         .label-card {
-            width: 101mm;
-            height: 54mm;
+            width: 89mm;
+            height: 36mm;
             background: #fff;
             border: 1px solid #bbb;
             border-radius: 3px;
             display: flex;
             flex-direction: row;
             align-items: center;
-            padding: 4mm 5mm;
-            gap: 5mm;
+            padding: 3mm 4mm;
+            gap: 4mm;
         }
 
         .label-qr { flex-shrink: 0; }
         .label-qr canvas, .label-qr img {
-            width: 40mm !important;
-            height: 40mm !important;
+            width: 26mm !important;
+            height: 26mm !important;
             display: block;
         }
 
@@ -89,26 +89,26 @@ $base_url = basis_url();
         }
 
         .label-titel {
-            font-size: 15pt;
+            font-size: 12pt;
             font-weight: bold;
             color: #185E9B;
         }
 
         .label-sub {
-            font-size: 9.5pt;
+            font-size: 8pt;
             color: #333;
-            line-height: 1.6;
+            line-height: 1.5;
         }
 
         /* ── Print: elke label op eigen pagina ── */
         @media print {
             @page {
-                size: 101mm 54mm;
+                size: 89mm 36mm;
                 margin: 0;
             }
 
             html, body {
-                width: 101mm;
+                width: 89mm;
                 background: #fff;
             }
 
@@ -118,8 +118,8 @@ $base_url = basis_url();
             .label-card {
                 border: none;
                 border-radius: 0;
-                width: 101mm !important;
-                height: 54mm !important;
+                width: 89mm !important;
+                height: 36mm !important;
                 page-break-after: always;
                 page-break-inside: avoid;
             }
@@ -162,8 +162,8 @@ document.addEventListener('DOMContentLoaded', function() {
     apparaten.forEach(function(a, i) {
         new QRCode(document.getElementById('qr-' + i), {
             text: a.url,
-            width: 151,
-            height: 151,
+            width: 98,
+            height: 98,
             correctLevel: QRCode.CorrectLevel.M
         });
     });
