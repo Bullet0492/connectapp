@@ -595,7 +595,7 @@ function beheerder_kleur($naam, $kleuren) {
 <?php elseif ($actieve_tab === 'wachtwoorden'): ?>
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h6 class="fw-bold mb-0">Wachtwoordkluis</h6>
-    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalWachtwoord">+ Toevoegen</button>
+    <button class="btn btn-primary btn-sm" onclick="nieuwWachtwoord()">+ Toevoegen</button>
 </div>
 <?php if (empty($inloggegevens)): ?>
     <div class="bg-white rounded-3 border p-4 text-center text-muted">Nog geen inloggegevens.</div>
@@ -797,7 +797,7 @@ function beheerder_kleur($naam, $kleuren) {
 <?php elseif ($actieve_tab === 'service'): ?>
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h6 class="fw-bold mb-0">Servicehistorie</h6>
-    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalService">+ Toevoegen</button>
+    <button class="btn btn-primary btn-sm" onclick="nieuwService()">+ Toevoegen</button>
 </div>
 <?php if (empty($service)): ?>
     <div class="bg-white rounded-3 border p-4 text-center text-muted">Nog geen servicehistorie.</div>
@@ -1516,9 +1516,18 @@ $iconen = ['pdf' => 'ri-file-pdf-line', 'docx' => 'ri-file-word-line', 'doc' => 
 <?php elseif ($actieve_tab === 'internet'): ?>
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h6 class="fw-bold mb-0"><i class="ri-wifi-line me-1"></i> Internet aansluiting</h6>
-    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalInternet">
-        <?= $internet ? '<i class="ri-edit-line"></i> Bewerken' : '+ Toevoegen' ?>
-    </button>
+    <div class="d-flex gap-2">
+        <?php if ($internet): ?>
+        <form method="post" action="<?= $base ?>/internet/verwijderen.php" onsubmit="return confirm('Internet aansluiting verwijderen?')">
+            <?= csrf_field() ?>
+            <input type="hidden" name="klant_id" value="<?= $id ?>">
+            <button type="submit" class="btn btn-outline-danger btn-sm"><i class="ri-delete-bin-line"></i> Verwijderen</button>
+        </form>
+        <?php endif; ?>
+        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalInternet">
+            <?= $internet ? '<i class="ri-edit-line"></i> Bewerken' : '+ Toevoegen' ?>
+        </button>
+    </div>
 </div>
 <?php if (!$internet): ?>
     <div class="bg-white rounded-3 border p-4 text-center text-muted">Nog geen internet gegevens.</div>
@@ -1715,6 +1724,20 @@ function kopieer(tekst, btn) {
 }
 
 // ─── Wachtwoord bewerken ──────────────────────────────────────────────────────
+function nieuwWachtwoord() {
+    document.getElementById('wwModalTitel').textContent = 'Inloggegevens toevoegen';
+    document.getElementById('ig_id').value              = '';
+    document.getElementById('ww_label').value           = '';
+    document.getElementById('ww_categorie').value       = 'router';
+    document.getElementById('ww_categorie_anders').value = '';
+    toggleWwCategorie();
+    document.getElementById('ww_gebruikersnaam').value  = '';
+    document.getElementById('ww_wachtwoord').value      = '';
+    document.getElementById('ww_url').value             = '';
+    document.getElementById('ww_notities').value        = '';
+    new bootstrap.Modal(document.getElementById('modalWachtwoord')).show();
+}
+
 function bewerkWachtwoord(ig) {
     document.getElementById('wwModalTitel').textContent = 'Inloggegevens bewerken';
     document.getElementById('ig_id').value              = ig.id;
@@ -1737,6 +1760,17 @@ function bewerkWachtwoord(ig) {
 }
 
 // ─── Service bewerken ─────────────────────────────────────────────────────────
+function nieuwService() {
+    document.getElementById('serviceModalTitel').textContent = 'Service toevoegen';
+    document.getElementById('service_id').value        = '';
+    document.getElementById('sv_datum').value          = '';
+    document.getElementById('sv_type').value           = 'bezoek';
+    document.getElementById('sv_apparaat_id').value    = '';
+    document.getElementById('sv_omschrijving').value   = '';
+    document.getElementById('sv_opgelost_door').value  = '';
+    new bootstrap.Modal(document.getElementById('modalService')).show();
+}
+
 function bewerkService(s) {
     document.getElementById('serviceModalTitel').textContent = 'Service bewerken';
     document.getElementById('service_id').value        = s.id;
@@ -1785,10 +1819,12 @@ function bewerkNotitie(n) {
 function toggleTelType() {
     document.getElementById('tel_yeastar_velden').style.display = document.getElementById('tel_yeastar').checked ? 'block' : 'none';
 }
-document.getElementById('tel_simpbx').addEventListener('change', function() {
+var _elSimpbx = document.getElementById('tel_simpbx');
+if (_elSimpbx) _elSimpbx.addEventListener('change', function() {
     document.getElementById('tel_simpbx_velden').style.display = this.checked ? 'block' : 'none';
 });
-document.getElementById('tel_ziggo').addEventListener('change', function() {
+var _elZiggo = document.getElementById('tel_ziggo');
+if (_elZiggo) _elZiggo.addEventListener('change', function() {
     document.getElementById('tel_ziggo_velden').style.display = this.checked ? 'block' : 'none';
 });
 

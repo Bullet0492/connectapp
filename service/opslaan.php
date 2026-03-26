@@ -20,19 +20,19 @@ if (!$klant_id || !$datum || !$omschrijving) {
 $user = huidig_gebruiker();
 $apparaat_id = (int)($_POST['apparaat_id'] ?? 0) ?: null;
 
-$data = [
+$data_update = [
     'klant_id'      => $klant_id,
     'apparaat_id'   => $apparaat_id,
     'datum'         => $datum,
     'type'          => trim($_POST['type'] ?? 'bezoek'),
     'omschrijving'  => $omschrijving,
     'opgelost_door' => trim($_POST['opgelost_door'] ?? ''),
-    'aangemaakt_door' => $user['id'],
 ];
+$data = array_merge($data_update, ['aangemaakt_door' => $user['id']]);
 
 if ($service_id) {
     db()->prepare("UPDATE service_historie SET datum=:datum, type=:type, apparaat_id=:apparaat_id, omschrijving=:omschrijving, opgelost_door=:opgelost_door WHERE id=:id AND klant_id=:klant_id")
-       ->execute(array_merge($data, ['id' => $service_id]));
+       ->execute(array_merge($data_update, ['id' => $service_id]));
     log_actie('service_bijgewerkt', 'Klant ID: ' . $klant_id . ', datum: ' . $datum);
     flash_set('succes', 'Service-entry bijgewerkt.');
 } else {
