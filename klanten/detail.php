@@ -71,6 +71,11 @@ $simpbx = $db->prepare('SELECT * FROM klant_simpbx WHERE klant_id = ?');
 $simpbx->execute([$id]);
 $simpbx = $simpbx->fetch() ?: null;
 
+// Ziggo
+$ziggo = $db->prepare('SELECT * FROM klant_ziggo WHERE klant_id = ?');
+$ziggo->execute([$id]);
+$ziggo = $ziggo->fetch() ?: null;
+
 // Internet provider
 $internet = $db->prepare('SELECT * FROM klant_internet WHERE klant_id = ?');
 $internet->execute([$id]);
@@ -199,6 +204,9 @@ require_once __DIR__ . '/../includes/header.php';
                 <?php if (!empty($klant['vps'])): ?>
                 <tr><td class="text-muted">VPS</td><td><i class="ri-server-line me-1 text-muted"></i><?= h($klant['vps']) ?></td></tr>
                 <?php endif; ?>
+                <?php if (!empty($klant['beheerder'])): ?>
+                <tr><td class="text-muted">Beheerder</td><td><i class="ri-user-settings-line me-1 text-muted"></i><?= h($klant['beheerder']) ?></td></tr>
+                <?php endif; ?>
             </table>
         </div>
     </div>
@@ -286,6 +294,12 @@ require_once __DIR__ . '/../includes/header.php';
                 <div class="d-flex align-items-center gap-2">
                     <i class="ri-phone-line text-success"></i>
                     <span class="fw-medium small">Simpbx</span>
+                </div>
+                <?php endif; ?>
+                <?php if (!empty($ziggo['actief'])): ?>
+                <div class="d-flex align-items-center gap-2">
+                    <i class="ri-phone-line text-danger"></i>
+                    <span class="fw-medium small">Ziggo</span>
                 </div>
                 <?php endif; ?>
             </div>
@@ -1040,6 +1054,13 @@ $iconen = ['pdf' => 'ri-file-pdf-line', 'docx' => 'ri-file-word-line', 'doc' => 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h6 class="fw-bold mb-0">Microsoft Office 365</h6>
     <div class="d-flex gap-2">
+        <?php if ($o365): ?>
+        <a href="<?= $base ?>/o365/tenant_verwijderen.php?klant_id=<?= $id ?>"
+           class="btn btn-outline-danger btn-sm"
+           onclick="return confirm('Office 365 gegevens verwijderen? Dit verwijdert ook alle licenties en gebruikers.')">
+            <i class="ri-delete-bin-line"></i> Verwijderen
+        </a>
+        <?php endif; ?>
         <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#modalO365Gebruiker" onclick="resetGebruikerModal()">+ Gebruiker</button>
         <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalO365">
             <?= $o365 ? '<i class="ri-edit-line"></i> Tenant' : '+ Toevoegen' ?>
@@ -1384,6 +1405,13 @@ $iconen = ['pdf' => 'ri-file-pdf-line', 'docx' => 'ri-file-word-line', 'doc' => 
 </div>
 <?php endif; ?>
 
+<?php if (!empty($ziggo['actief'])): ?>
+<div class="bg-white rounded-3 border p-4" style="max-width:500px;">
+    <h6 class="fw-bold mb-3"><i class="ri-phone-line me-1 text-danger"></i> Ziggo</h6>
+    <p class="text-muted small mb-0">Klant maakt gebruik van Ziggo telefonie.</p>
+</div>
+<?php endif; ?>
+
 <!-- Modal Telefonie -->
 <div class="modal fade" id="modalTelefonie" tabindex="-1">
     <div class="modal-dialog">
@@ -1406,6 +1434,10 @@ $iconen = ['pdf' => 'ri-file-pdf-line', 'docx' => 'ri-file-word-line', 'doc' => 
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" name="heeft_simpbx" id="tel_simpbx" value="1" <?= !empty($simpbx['actief']) ? 'checked' : '' ?>>
                                 <label class="form-check-label" for="tel_simpbx">Simpbx</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="heeft_ziggo" id="tel_ziggo" value="1" <?= !empty($ziggo['actief']) ? 'checked' : '' ?>>
+                                <label class="form-check-label" for="tel_ziggo">Ziggo</label>
                             </div>
                         </div>
                     </div>
@@ -1492,8 +1524,9 @@ $iconen = ['pdf' => 'ri-file-pdf-line', 'docx' => 'ri-file-word-line', 'doc' => 
                             <label class="form-label fw-medium">Provider <span class="text-danger">*</span></label>
                             <select name="provider" id="int_provider" class="form-select rounded-3" required onchange="toggleAndersVeld()">
                                 <option value="">Selecteer provider...</option>
-                                <option value="Routit" <?= ($internet['provider'] ?? '') === 'Routit' ? 'selected' : '' ?>>Routit</option>
-                                <option value="Pocos" <?= ($internet['provider'] ?? '') === 'Pocos' ? 'selected' : '' ?>>Pocos</option>
+                                <?php foreach (['Routit','Pocos','Delta','Eurofiber','Trined'] as $prov): ?>
+                                <option value="<?= $prov ?>" <?= ($internet['provider'] ?? '') === $prov ? 'selected' : '' ?>><?= $prov ?></option>
+                                <?php endforeach; ?>
                                 <option value="Anders" <?= ($internet['provider'] ?? '') === 'Anders' ? 'selected' : '' ?>>Anders (zelf invullen)</option>
                             </select>
                         </div>

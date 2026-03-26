@@ -20,8 +20,8 @@ Options -Indexes
     Deny from all
 </FilesMatch>
 
-# migrate10 tijdelijk toegankelijk
-<FilesMatch "^migrate10\.php$">
+# migrate11 tijdelijk toegankelijk
+<FilesMatch "^migrate1[01]\.php$">
     Order allow,deny
     Allow from all
 </FilesMatch>

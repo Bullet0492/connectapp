@@ -97,15 +97,12 @@ $scan_url = $base_url . '/qr/klant.php?id=' . $id;
     <div class="label-card" id="label-klant">
         <div class="label-qr" id="qr-klant"></div>
         <div class="label-info">
-            <div class="label-titel">Klant</div>
+            <div class="label-titel">Connect4IT</div>
             <div class="label-naam"><?= h($klant['naam']) ?></div>
-            <?php if (!empty($klant['bedrijf'])): ?>
-            <div class="label-bedrijf"><?= h($klant['bedrijf']) ?></div>
+            <?php if (!empty($klant['intra_id'])): ?>
+            <div class="label-bedrijf">ID: <?= h($klant['intra_id']) ?></div>
             <?php endif; ?>
-            <?php if (!empty($klant['telefoon'])): ?>
-            <div class="label-bedrijf"><?= h($klant['telefoon']) ?></div>
-            <?php endif; ?>
-            <div class="label-sub">connect4it.nl</div>
+            <div class="label-sub">connect4it.nl &bull; 085 105 3040</div>
         </div>
     </div>
 </div>

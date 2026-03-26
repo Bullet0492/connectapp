@@ -14,7 +14,10 @@ $per_pagina = 15;
 // POST: opslaan of bijwerken
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();
-    $velden = ['naam','bedrijf','adres','postcode','stad','telefoon','email','website','intra_id','notities','vps'];
+    $velden = ['naam','bedrijf','adres','postcode','stad','telefoon','email','website','intra_id','notities','vps','beheerder'];
+    if (trim($_POST['beheerder'] ?? '') === 'anders') {
+        $_POST['beheerder'] = trim($_POST['beheerder_anders'] ?? '') ?: null;
+    }
     $data = [];
     foreach ($velden as $v) {
         $data[$v] = trim($_POST[$v] ?? '');
@@ -24,13 +27,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($data['naam'] !== '') {
         if ($bewerken_id) {
             $db->prepare("UPDATE klanten SET naam=:naam, bedrijf=:bedrijf, adres=:adres, postcode=:postcode,
-                stad=:stad, telefoon=:telefoon, email=:email, website=:website, intra_id=:intra_id, notities=:notities, vps=:vps
+                stad=:stad, telefoon=:telefoon, email=:email, website=:website, intra_id=:intra_id, notities=:notities, vps=:vps, beheerder=:beheerder
                 WHERE id=:id")->execute(array_merge($data, ['id' => $bewerken_id]));
             log_actie('klant_bijgewerkt', 'Naam: ' . $data['naam'] . ', ID: ' . $bewerken_id);
             flash_set('succes', 'Klant bijgewerkt.');
         } else {
-            $db->prepare("INSERT INTO klanten (naam,bedrijf,adres,postcode,stad,telefoon,email,website,intra_id,notities,vps)
-                VALUES (:naam,:bedrijf,:adres,:postcode,:stad,:telefoon,:email,:website,:intra_id,:notities,:vps)")
+            $db->prepare("INSERT INTO klanten (naam,bedrijf,adres,postcode,stad,telefoon,email,website,intra_id,notities,vps,beheerder)
+                VALUES (:naam,:bedrijf,:adres,:postcode,:stad,:telefoon,:email,:website,:intra_id,:notities,:vps,:beheerder)")
                 ->execute($data);
             log_actie('klant_aangemaakt', 'Naam: ' . $data['naam']);
             flash_set('succes', 'Klant aangemaakt.');
@@ -255,6 +258,25 @@ function klant_pagina_url(int $p): string {
                                    value="<?= $bewerken_klant ? h($bewerken_klant['intra_id'] ?? '') : '' ?>">
                         </div>
                         <div class="col-12 col-md-6">
+                            <label class="form-label fw-medium">Beheerder</label>
+                            <select name="beheerder" id="klant_beheerder" class="form-select rounded-3" onchange="toggleBeheerderAnders()">
+                                <option value="">— Geen —</option>
+                                <?php foreach (['Connect4IT','Lars Manders','Frank Lendering','Bitcom','Kirkels','Academy'] as $b): ?>
+                                <?php $huidig = $bewerken_klant['beheerder'] ?? ''; ?>
+                                <option value="<?= $b ?>" <?= $huidig === $b ? 'selected' : '' ?>><?= $b ?></option>
+                                <?php endforeach; ?>
+                                <?php
+                                $vaste = ['','Connect4IT','Lars Manders','Frank Lendering','Bitcom','Kirkels','Academy'];
+                                $is_anders = !in_array($bewerken_klant['beheerder'] ?? '', $vaste);
+                                ?>
+                                <option value="anders" <?= $is_anders ? 'selected' : '' ?>>Anders...</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-6" id="beheerder_anders_veld" style="display:<?= $is_anders ? 'block' : 'none' ?>;">
+                            <label class="form-label fw-medium">Beheerder naam</label>
+                            <input type="text" name="beheerder_anders" id="beheerder_anders_input" class="form-control rounded-3" value="<?= $is_anders ? h($bewerken_klant['beheerder'] ?? '') : '' ?>" placeholder="Naam beheerder...">
+                        </div>
+                        <div class="col-12 col-md-6">
                             <label class="form-label fw-medium">VPS</label>
                             <select name="vps" class="form-select rounded-3">
                                 <option value="">— Geen VPS —</option>
@@ -301,15 +323,22 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 })();
 
+function toggleBeheerderAnders() {
+    var sel = document.getElementById('klant_beheerder');
+    var div = document.getElementById('beheerder_anders_veld');
+    div.style.display = sel.value === 'anders' ? 'block' : 'none';
+}
+
 document.getElementById('btn-nieuwe-klant').addEventListener('click', function() {
     var modal = document.getElementById('modalKlant');
     modal.querySelector('.modal-title').textContent = 'Nieuwe klant';
     var form = modal.querySelector('form');
     form.querySelector('[name="bewerken_id"]').value = '';
-    ['naam','bedrijf','email','telefoon','adres','postcode','stad','website','intra_id','notities','vps'].forEach(function(f) {
+    ['naam','bedrijf','email','telefoon','adres','postcode','stad','website','intra_id','notities','vps','beheerder','beheerder_anders'].forEach(function(f) {
         var el = form.querySelector('[name="' + f + '"]');
         if (el) el.value = '';
     });
+    document.getElementById('beheerder_anders_veld').style.display = 'none';
     form.classList.remove('was-validated');
 });
 </script>
