@@ -27,23 +27,22 @@ $scan_url  = $base_url . '/qr/apparaat.php?id=' . $id;
     <style>
         body { background: #f8f9fa; }
         @media print {
+            @page { size: 101mm 54mm landscape; margin: 0; }
             body { background: #fff; }
             .no-print { display: none !important; }
         }
         .label-card {
-            width: 62mm; min-height: 40mm;
-            border: 1px solid #ccc; border-radius: 6px;
-            padding: 6px 8px; background: #fff;
-            display: flex; align-items: flex-start; gap: 8px;
+            width: 101mm; height: 54mm;
+            border: 1px solid #ccc; border-radius: 4px;
+            padding: 5mm; background: #fff;
+            display: flex; flex-direction: row; align-items: center; gap: 5mm;
             font-family: Arial, sans-serif; box-sizing: border-box;
         }
-        .label-qr img, .label-qr canvas { width: 32mm !important; height: 32mm !important; display: block; }
-        .label-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
-        .label-titel  { font-size: 8.5pt; font-weight: bold; color: #185E9B; letter-spacing: .3px; }
-        .label-naam   { font-size: 9pt; font-weight: bold; color: #111; word-break: break-word; }
-        .label-bedrijf{ font-size: 7.5pt; color: #555; word-break: break-word; }
-        .label-code   { font-size: 7pt; color: #888; font-family: monospace; }
-        .label-sub    { font-size: 7pt; color: #888; margin-top: auto; padding-top: 3px; border-top: 1px solid #eee; }
+        .label-qr { flex-shrink: 0; }
+        .label-qr img, .label-qr canvas { width: 38mm !important; height: 38mm !important; display: block; }
+        .label-info { display: flex; flex-direction: column; justify-content: center; gap: 2mm; }
+        .label-titel { font-size: 13pt; font-weight: bold; color: #185E9B; letter-spacing: .3px; }
+        .label-sub   { font-size: 9pt; color: #444; line-height: 1.5; }
     </style>
 </head>
 <body>
@@ -68,7 +67,7 @@ $scan_url  = $base_url . '/qr/apparaat.php?id=' . $id;
 document.addEventListener('DOMContentLoaded', function() {
     new QRCode(document.getElementById('qr-apparaat'), {
         text: '<?= addslashes($scan_url) ?>',
-        width: 121, height: 121,
+        width: 144, height: 144,
         correctLevel: QRCode.CorrectLevel.M
     });
 });
