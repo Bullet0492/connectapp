@@ -105,9 +105,9 @@ require_once __DIR__ . '/../includes/header.php';
         <a href="<?= $base ?>/qr/label_klant.php?id=<?= $id ?>" class="btn btn-outline-secondary btn-sm" target="_blank" title="QR-label afdrukken">
             <i class="ri-qr-code-line"></i> QR
         </a>
-        <a href="index.php?bewerken=<?= $id ?>" class="btn btn-outline-secondary btn-sm">
+        <button class="btn btn-outline-secondary btn-sm" onclick="openBewerkKlant()">
             <i class="ri-edit-line"></i> Bewerken
-        </a>
+        </button>
     </div>
 </div>
 
@@ -2030,6 +2030,108 @@ function kopieerSbxWw(klant_id, btn) {
     fetch('<?= $base ?>/simpbx/toon.php?id=' + klant_id + '&csrf=<?= h(csrf_token()) ?>')
         .then(r => r.json())
         .then(data => { if (data.ww) { sbxCache = data.ww; doCopy(data.ww); } });
+}
+</script>
+
+<!-- Modal: Klant bewerken -->
+<div class="modal fade" id="modalBewerkKlant" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content rounded-3 border-0 shadow">
+            <div class="modal-header border-0 pb-0 px-4 pt-4">
+                <h5 class="modal-title fw-bold">Klant bewerken</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form method="post" action="<?= $base ?>/klanten/index.php" class="needs-validation" novalidate>
+                    <?= csrf_field() ?>
+                    <input type="hidden" name="bewerken_id" value="<?= $id ?>">
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-medium">Naam <span class="text-danger">*</span></label>
+                            <input type="text" name="naam" class="form-control rounded-3" value="<?= h($klant['naam']) ?>" required>
+                            <div class="invalid-feedback">Vul een naam in.</div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-medium">Bedrijfsnaam</label>
+                            <input type="text" name="bedrijf" class="form-control rounded-3" value="<?= h($klant['bedrijf'] ?? '') ?>">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-medium">E-mail</label>
+                            <input type="email" name="email" class="form-control rounded-3" value="<?= h($klant['email'] ?? '') ?>">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-medium">Telefoon</label>
+                            <input type="text" name="telefoon" class="form-control rounded-3" value="<?= h($klant['telefoon'] ?? '') ?>">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-medium">Adres</label>
+                            <input type="text" name="adres" class="form-control rounded-3" value="<?= h($klant['adres'] ?? '') ?>">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-medium">Postcode</label>
+                            <input type="text" name="postcode" class="form-control rounded-3" value="<?= h($klant['postcode'] ?? '') ?>">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-medium">Plaats</label>
+                            <input type="text" name="stad" class="form-control rounded-3" value="<?= h($klant['stad'] ?? '') ?>">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-medium">Website</label>
+                            <input type="text" name="website" class="form-control rounded-3" value="<?= h($klant['website'] ?? '') ?>">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-medium">Intelly ID</label>
+                            <input type="text" name="intra_id" class="form-control rounded-3" value="<?= h($klant['intra_id'] ?? '') ?>">
+                        </div>
+                        <?php
+                        $vaste_beheerders = ['Connect4IT','Lars Manders','Frank Lendering','Bitcom','Kirkels','Academy'];
+                        $huidig_beheerder = $klant['beheerder'] ?? '';
+                        $is_anders_bk = !in_array($huidig_beheerder, array_merge([''], $vaste_beheerders));
+                        ?>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-medium">Beheerder</label>
+                            <select name="beheerder" id="bk_beheerder" class="form-select rounded-3" onchange="toggleBewerkBeheerder()">
+                                <option value="">— Geen —</option>
+                                <?php foreach ($vaste_beheerders as $b): ?>
+                                <option value="<?= $b ?>" <?= $huidig_beheerder === $b ? 'selected' : '' ?>><?= $b ?></option>
+                                <?php endforeach; ?>
+                                <option value="anders" <?= $is_anders_bk ? 'selected' : '' ?>>Anders...</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-6" id="bk_beheerder_anders" style="display:<?= $is_anders_bk ? 'block' : 'none' ?>;">
+                            <label class="form-label fw-medium">Beheerder naam</label>
+                            <input type="text" name="beheerder_anders" class="form-control rounded-3" value="<?= $is_anders_bk ? h($huidig_beheerder) : '' ?>">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-medium">VPS</label>
+                            <select name="vps" class="form-select rounded-3">
+                                <option value="">— Geen VPS —</option>
+                                <?php foreach (['vps1','vps2','vps3','vps4','vps5'] as $v): ?>
+                                <option value="<?= $v ?>.connect4it.hix.nl" <?= ($klant['vps'] ?? '') === $v.'.connect4it.hix.nl' ? 'selected' : '' ?>><?= $v ?>.connect4it.hix.nl</option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-medium">Notities</label>
+                            <textarea name="notities" class="form-control rounded-3" rows="3"><?= h($klant['notities'] ?? '') ?></textarea>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="button" class="btn btn-outline-secondary flex-grow-1 rounded-3" data-bs-dismiss="modal">Annuleren</button>
+                        <button type="submit" class="btn btn-primary flex-grow-1 rounded-3">Opslaan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+function openBewerkKlant() {
+    new bootstrap.Modal(document.getElementById('modalBewerkKlant')).show();
+}
+function toggleBewerkBeheerder() {
+    var sel = document.getElementById('bk_beheerder');
+    document.getElementById('bk_beheerder_anders').style.display = sel.value === 'anders' ? 'block' : 'none';
 }
 </script>
 
