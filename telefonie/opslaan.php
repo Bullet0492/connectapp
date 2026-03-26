@@ -12,6 +12,8 @@ if (!$klant_id) { header('Location: ' . basis_url() . '/klanten/index.php'); exi
 $heeft_yeastar = isset($_POST['heeft_yeastar']);
 $heeft_simpbx  = isset($_POST['heeft_simpbx']);
 $heeft_ziggo   = isset($_POST['heeft_ziggo']);
+$simpbx_naam   = trim($_POST['simpbx_naam'] ?? '');
+$ziggo_naam    = trim($_POST['ziggo_naam'] ?? '');
 
 // ─── Yeastar ─────────────────────────────────────────────────────────────────
 if ($heeft_yeastar) {
@@ -41,9 +43,9 @@ if ($heeft_simpbx) {
     $bestaand = db()->prepare('SELECT id FROM klant_simpbx WHERE klant_id=?');
     $bestaand->execute([$klant_id]);
     if ($bestaand->fetch()) {
-        db()->prepare('UPDATE klant_simpbx SET actief=1 WHERE klant_id=?')->execute([$klant_id]);
+        db()->prepare('UPDATE klant_simpbx SET actief=1, naam=? WHERE klant_id=?')->execute([$simpbx_naam ?: null, $klant_id]);
     } else {
-        db()->prepare('INSERT INTO klant_simpbx (klant_id, actief) VALUES (?,1)')->execute([$klant_id]);
+        db()->prepare('INSERT INTO klant_simpbx (klant_id, actief, naam) VALUES (?,1,?)')->execute([$klant_id, $simpbx_naam ?: null]);
     }
 } else {
     db()->prepare('UPDATE klant_simpbx SET actief=0 WHERE klant_id=?')->execute([$klant_id]);
@@ -54,9 +56,9 @@ if ($heeft_ziggo) {
     $bestaand = db()->prepare('SELECT id FROM klant_ziggo WHERE klant_id=?');
     $bestaand->execute([$klant_id]);
     if ($bestaand->fetch()) {
-        db()->prepare('UPDATE klant_ziggo SET actief=1 WHERE klant_id=?')->execute([$klant_id]);
+        db()->prepare('UPDATE klant_ziggo SET actief=1, naam=? WHERE klant_id=?')->execute([$ziggo_naam ?: null, $klant_id]);
     } else {
-        db()->prepare('INSERT INTO klant_ziggo (klant_id, actief) VALUES (?,1)')->execute([$klant_id]);
+        db()->prepare('INSERT INTO klant_ziggo (klant_id, actief, naam) VALUES (?,1,?)')->execute([$klant_id, $ziggo_naam ?: null]);
     }
 } else {
     db()->prepare('UPDATE klant_ziggo SET actief=0 WHERE klant_id=?')->execute([$klant_id]);

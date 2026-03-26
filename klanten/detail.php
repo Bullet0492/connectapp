@@ -1425,6 +1425,12 @@ $iconen = ['pdf' => 'ri-file-pdf-line', 'docx' => 'ri-file-word-line', 'doc' => 
 <?php if (!empty($simpbx['actief'])): ?>
 <div class="bg-white rounded-3 border p-4 mb-3" style="max-width:500px;">
     <h6 class="fw-bold mb-3" style="color:#2563eb;">SimPBX</h6>
+    <?php if (!empty($simpbx['naam'])): ?>
+    <div class="d-flex align-items-center gap-2 mb-2">
+        <span class="text-muted" style="font-size:12px;min-width:90px;">Klantnaam</span>
+        <span style="font-size:12px;"><?= h($simpbx['naam']) ?></span>
+    </div>
+    <?php endif; ?>
     <p class="text-muted small mb-0">Klant maakt gebruik van onze eigen SimPBX telefooncentrale.</p>
 </div>
 <?php endif; ?>
@@ -1432,7 +1438,13 @@ $iconen = ['pdf' => 'ri-file-pdf-line', 'docx' => 'ri-file-word-line', 'doc' => 
 <?php if (!empty($ziggo['actief'])): ?>
 <div class="bg-white rounded-3 border p-4 mb-3" style="max-width:500px;">
     <h6 class="fw-bold mb-3"><img src="https://vodafoneziggo.scene7.com/is/content/vodafoneziggo/ziggo-logo-orange-v1" height="18" alt="Ziggo" style="object-fit:contain;"></h6>
-    <p class="text-muted small mb-0">Klant maakt gebruik van Ziggo telefonie.</p>
+    <?php if (!empty($ziggo['naam'])): ?>
+    <div class="d-flex align-items-center gap-2 mb-2">
+        <span class="text-muted" style="font-size:12px;min-width:90px;">Klantnaam</span>
+        <span style="font-size:12px;"><?= h($ziggo['naam']) ?></span>
+    </div>
+    <?php endif; ?>
+    <p class="text-muted small mb-0">Klant maakt nu gebruik van Ziggo portaal.</p>
 </div>
 <?php endif; ?>
 
@@ -1464,6 +1476,14 @@ $iconen = ['pdf' => 'ri-file-pdf-line', 'docx' => 'ri-file-word-line', 'doc' => 
                                 <label class="form-check-label" for="tel_ziggo">Ziggo</label>
                             </div>
                         </div>
+                    </div>
+                    <div class="mb-3" id="tel_simpbx_velden" style="display:<?= !empty($simpbx['actief']) ? 'block' : 'none' ?>;">
+                        <label class="form-label fw-medium">SimPBX klantnaam</label>
+                        <input type="text" name="simpbx_naam" class="form-control rounded-3" placeholder="Naam van de klant in SimPBX" value="<?= h($simpbx['naam'] ?? '') ?>">
+                    </div>
+                    <div class="mb-3" id="tel_ziggo_velden" style="display:<?= !empty($ziggo['actief']) ? 'block' : 'none' ?>;">
+                        <label class="form-label fw-medium">Ziggo klantnaam</label>
+                        <input type="text" name="ziggo_naam" class="form-control rounded-3" placeholder="Naam van de klant bij Ziggo" value="<?= h($ziggo['naam'] ?? '') ?>">
                     </div>
                     <div id="tel_yeastar_velden" style="display:<?= $ys ? 'block' : 'none' ?>;">
                         <div class="mb-3">
@@ -1763,9 +1783,14 @@ function bewerkNotitie(n) {
 
 // ─── Telefonie type toggle ────────────────────────────────────────────────────
 function toggleTelType() {
-    var checked = document.getElementById('tel_yeastar').checked;
-    document.getElementById('tel_yeastar_velden').style.display = checked ? 'block' : 'none';
+    document.getElementById('tel_yeastar_velden').style.display = document.getElementById('tel_yeastar').checked ? 'block' : 'none';
 }
+document.getElementById('tel_simpbx').addEventListener('change', function() {
+    document.getElementById('tel_simpbx_velden').style.display = this.checked ? 'block' : 'none';
+});
+document.getElementById('tel_ziggo').addEventListener('change', function() {
+    document.getElementById('tel_ziggo_velden').style.display = this.checked ? 'block' : 'none';
+});
 
 // ─── Toggle wachtwoord veld in modal ─────────────────────────────────────────
 function toggleVeld(id, btn) {
