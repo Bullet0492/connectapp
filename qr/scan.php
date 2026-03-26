@@ -12,6 +12,13 @@ $base = basis_url();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <title>QR scannen - Connect App</title>
+    <link rel="manifest" href="/app/manifest.json">
+    <meta name="theme-color" content="#000000">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Connect4IT">
+    <link rel="apple-touch-icon" href="/app/images/logo.png">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link href="https://cdn.jsdelivr.net/npm/remixicon@4.3.0/fonts/remixicon.css" rel="stylesheet">
     <style>
@@ -233,6 +240,10 @@ function handleResult(tekst) {
 }
 
 startCamera();
+
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/app/sw.js');
+}
 </script>
 </body>
 </html>

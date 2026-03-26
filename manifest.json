@@ -1,0 +1,25 @@
+{
+    "name": "Connect4IT",
+    "short_name": "Connect4IT",
+    "description": "Connect4IT klanten & QR scanner",
+    "start_url": "/app/qr/scan.php",
+    "scope": "/app/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#185E9B",
+    "orientation": "portrait",
+    "icons": [
+        {
+            "src": "/app/images/logo.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/app/images/logo.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
+}
