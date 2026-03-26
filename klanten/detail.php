@@ -221,6 +221,12 @@ function beheerder_kleur($naam, $kleuren) {
                 <?php endif; ?>
             </table>
         </div>
+        <?php if (!empty($klant['notities'])): ?>
+        <div class="bg-white rounded-3 border p-4 mt-3">
+            <h6 class="fw-bold mb-2">Notities</h6>
+            <p class="mb-0 text-muted small" style="white-space:pre-line;"><?= h($klant['notities']) ?></p>
+        </div>
+        <?php endif; ?>
     </div>
 
     <!-- Samenvatting + VPS/Beheerder -->
@@ -266,12 +272,6 @@ function beheerder_kleur($naam, $kleuren) {
                 </div>
             </div>
         </div>
-        <?php if (!empty($klant['notities'])): ?>
-        <div class="bg-white rounded-3 border p-4 mt-3">
-            <h6 class="fw-bold mb-2">Notities</h6>
-            <p class="mb-0 text-muted small" style="white-space:pre-line;"><?= h($klant['notities']) ?></p>
-        </div>
-        <?php endif; ?>
     </div>
 
     <!-- Microsoft 365 -->
