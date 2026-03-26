@@ -58,16 +58,8 @@ $scan_url  = $base_url . '/qr/apparaat.php?id=' . $id;
     <div class="label-card">
         <div class="label-qr" id="qr-apparaat"></div>
         <div class="label-info">
-            <div class="label-titel">Apparaat</div>
-            <div class="label-naam"><?= h(trim($apparaat['merk'] . ' ' . $apparaat['model']) ?: ucfirst($apparaat['type'])) ?></div>
-            <div class="label-bedrijf"><?= h($apparaat['klant_naam']) ?></div>
-            <?php if (!empty($apparaat['serienummer'])): ?>
-            <div class="label-code"><?= h($apparaat['serienummer']) ?></div>
-            <?php endif; ?>
-            <?php if (!empty($apparaat['qr_code'])): ?>
-            <div class="label-code"><?= h($apparaat['qr_code']) ?></div>
-            <?php endif; ?>
-            <div class="label-sub">connect4it.nl</div>
+            <div class="label-titel">Connect4IT</div>
+            <div class="label-sub">www.connect4it.nl<br>085 105 3040</div>
         </div>
     </div>
 </div>

@@ -75,14 +75,8 @@ $base_url = basis_url();
     <div class="label-card">
         <div class="label-qr" id="qr-<?= $i ?>"></div>
         <div class="label-info">
-            <div class="label-titel">Apparaat</div>
-            <div class="label-naam"><?= h(trim($a['merk'] . ' ' . $a['model']) ?: ucfirst($a['type'])) ?></div>
-            <div class="label-bedrijf"><?= h($klant['naam']) ?></div>
-            <?php if (!empty($a['serienummer'])): ?>
-            <div class="label-code"><?= h($a['serienummer']) ?></div>
-            <?php endif; ?>
-            <div class="label-code"><?= h($a['qr_code']) ?></div>
-            <div class="label-sub">connect4it.nl</div>
+            <div class="label-titel">Connect4IT</div>
+            <div class="label-sub">www.connect4it.nl<br>085 105 3040</div>
         </div>
     </div>
     <?php endforeach; ?>
