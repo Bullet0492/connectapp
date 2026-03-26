@@ -20,11 +20,6 @@ Options -Indexes
     Deny from all
 </FilesMatch>
 
-# migrate11 tijdelijk toegankelijk
-<FilesMatch "^migrate1[01]\.php$">
-    Order allow,deny
-    Allow from all
-</FilesMatch>
 
 # ─── Security headers ────────────────────────────────────────────────────────
 <IfModule mod_headers.c>

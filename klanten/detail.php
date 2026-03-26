@@ -194,18 +194,24 @@ require_once __DIR__ . '/../includes/header.php';
                 <?php endif; ?>
                 <tr><td class="text-muted" style="width:40%">E-mail</td><td><?= h($klant['email'] ?: '—') ?></td></tr>
                 <tr><td class="text-muted">Telefoon</td><td><?= h($klant['telefoon'] ?: '—') ?></td></tr>
-                <?php if (!empty($klant['website'])): ?>
-                <tr><td class="text-muted">Website</td><td><a href="<?= h($klant['website']) ?>" target="_blank"><?= h($klant['website']) ?></a></td></tr>
-                <?php endif; ?>
                 <tr><td class="text-muted">Adres</td><td>
                     <?= h($klant['adres'] ?: '—') ?><br>
                     <?= h($klant['postcode'] . ' ' . $klant['stad']) ?>
                 </td></tr>
+                <?php if (!empty($klant['website'])): ?>
+                <tr><td class="text-muted">Website</td><td><a href="<?= h($klant['website']) ?>" target="_blank"><?= h($klant['website']) ?></a></td></tr>
+                <?php endif; ?>
                 <?php if (!empty($klant['vps'])): ?>
-                <tr><td class="text-muted">VPS</td><td><i class="ri-server-line me-1 text-muted"></i><?= h($klant['vps']) ?></td></tr>
+                <tr>
+                    <td class="text-muted">VPS</td>
+                    <td><span class="badge rounded-pill text-bg-info fw-semibold px-2 py-1"><i class="ri-server-line me-1"></i><?= h($klant['vps']) ?></span></td>
+                </tr>
                 <?php endif; ?>
                 <?php if (!empty($klant['beheerder'])): ?>
-                <tr><td class="text-muted">Beheerder</td><td><i class="ri-user-settings-line me-1 text-muted"></i><?= h($klant['beheerder']) ?></td></tr>
+                <tr>
+                    <td class="text-muted">Beheerder</td>
+                    <td><span class="badge rounded-pill text-bg-secondary fw-semibold px-2 py-1"><i class="ri-user-settings-line me-1"></i><?= h($klant['beheerder']) ?></span></td>
+                </tr>
                 <?php endif; ?>
             </table>
         </div>
@@ -283,7 +289,7 @@ require_once __DIR__ . '/../includes/header.php';
             <div class="d-flex flex-column gap-2">
                 <?php if ($ys_overzicht): ?>
                 <div class="d-flex align-items-center gap-2">
-                    <i class="ri-base-station-line text-primary"></i>
+                    <img src="https://www.mister-voip.nl/wp-content/uploads/2025/02/Yeastar_Symbol.png" height="20" alt="Yeastar" title="Yeastar" style="object-fit:contain;">
                     <span class="fw-medium small">Yeastar</span>
                     <?php if (!empty($ys_overzicht['admin_url'])): ?>
                     <a href="<?= h($ys_overzicht['admin_url']) ?>" target="_blank" class="small text-muted ms-1"><i class="ri-external-link-line"></i></a>
@@ -292,13 +298,13 @@ require_once __DIR__ . '/../includes/header.php';
                 <?php endif; ?>
                 <?php if (!empty($simpbx['actief'])): ?>
                 <div class="d-flex align-items-center gap-2">
-                    <i class="ri-phone-line text-success"></i>
-                    <span class="fw-medium small">Simpbx</span>
+                    <img src="https://benfmedia.simpbx.net/favicon.ico" height="18" alt="SimPBX" title="SimPBX" style="object-fit:contain;" onerror="this.style.display='none'">
+                    <span class="fw-medium small">SimPBX</span>
                 </div>
                 <?php endif; ?>
                 <?php if (!empty($ziggo['actief'])): ?>
                 <div class="d-flex align-items-center gap-2">
-                    <i class="ri-phone-line text-danger"></i>
+                    <img src="https://vodafoneziggo.scene7.com/is/content/vodafoneziggo/ziggo-logo-orange-v1" height="16" alt="Ziggo" title="Ziggo" style="object-fit:contain;">
                     <span class="fw-medium small">Ziggo</span>
                 </div>
                 <?php endif; ?>
@@ -1079,9 +1085,6 @@ $iconen = ['pdf' => 'ri-file-pdf-line', 'docx' => 'ri-file-word-line', 'doc' => 
                 <?php if (!empty($o365['tenant_naam'])): ?>
                 <tr><td class="text-muted" style="width:45%">Tenant naam</td><td><code><?= h($o365['tenant_naam']) ?></code></td></tr>
                 <?php endif; ?>
-                <?php if (!empty($o365['tenant_id'])): ?>
-                <tr><td class="text-muted">Tenant ID</td><td><code style="font-size:11px;"><?= h($o365['tenant_id']) ?></code></td></tr>
-                <?php endif; ?>
             </table>
             <?php if (!empty($o365['notities'])): ?>
             <p class="mb-0 text-muted small mt-2" style="white-space:pre-line;"><?= h($o365['notities']) ?></p>
@@ -1201,10 +1204,6 @@ $iconen = ['pdf' => 'ri-file-pdf-line', 'docx' => 'ri-file-word-line', 'doc' => 
                         <div class="col-12">
                             <label class="form-label fw-medium">Tenant naam</label>
                             <input type="text" name="tenant_naam" class="form-control rounded-3" placeholder="bedrijf.onmicrosoft.com" value="<?= h($o365['tenant_naam'] ?? '') ?>">
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label fw-medium">Tenant ID</label>
-                            <input type="text" name="tenant_id" class="form-control rounded-3 font-monospace" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" value="<?= h($o365['tenant_id'] ?? '') ?>">
                         </div>
                         <div class="col-12">
                             <label class="form-label fw-medium">Beheerder e-mail</label>
@@ -1372,7 +1371,7 @@ $iconen = ['pdf' => 'ri-file-pdf-line', 'docx' => 'ri-file-word-line', 'doc' => 
 
 <?php if ($ys): ?>
 <div class="bg-white rounded-3 border p-4 mb-3" style="max-width:500px;">
-    <h6 class="fw-bold mb-3"><i class="ri-base-station-line me-1 text-primary"></i> Yeastar</h6>
+    <h6 class="fw-bold mb-3 d-flex align-items-center gap-2"><img src="https://www.mister-voip.nl/wp-content/uploads/2025/02/Yeastar_Symbol.png" height="22" alt="Yeastar" style="object-fit:contain;"> Yeastar</h6>
     <?php if (!empty($ys['admin_url'])): ?>
     <div class="d-flex align-items-center gap-2 mb-2">
         <span class="text-muted" style="font-size:12px;min-width:90px;">Link</span>
@@ -1399,15 +1398,15 @@ $iconen = ['pdf' => 'ri-file-pdf-line', 'docx' => 'ri-file-word-line', 'doc' => 
 <?php endif; ?>
 
 <?php if (!empty($simpbx['actief'])): ?>
-<div class="bg-white rounded-3 border p-4" style="max-width:500px;">
-    <h6 class="fw-bold mb-3"><i class="ri-phone-line me-1 text-success"></i> Simpbx</h6>
-    <p class="text-muted small mb-0">Klant maakt gebruik van onze eigen Simpbx telefooncentrale.</p>
+<div class="bg-white rounded-3 border p-4 mb-3" style="max-width:500px;">
+    <h6 class="fw-bold mb-3 d-flex align-items-center gap-2"><img src="https://benfmedia.simpbx.net/favicon.ico" height="20" alt="SimPBX" style="object-fit:contain;" onerror="this.style.display='none'"> SimPBX</h6>
+    <p class="text-muted small mb-0">Klant maakt gebruik van onze eigen SimPBX telefooncentrale.</p>
 </div>
 <?php endif; ?>
 
 <?php if (!empty($ziggo['actief'])): ?>
-<div class="bg-white rounded-3 border p-4" style="max-width:500px;">
-    <h6 class="fw-bold mb-3"><i class="ri-phone-line me-1 text-danger"></i> Ziggo</h6>
+<div class="bg-white rounded-3 border p-4 mb-3" style="max-width:500px;">
+    <h6 class="fw-bold mb-3 d-flex align-items-center gap-2"><img src="https://vodafoneziggo.scene7.com/is/content/vodafoneziggo/ziggo-logo-orange-v1" height="18" alt="Ziggo" style="object-fit:contain;"> Ziggo</h6>
     <p class="text-muted small mb-0">Klant maakt gebruik van Ziggo telefonie.</p>
 </div>
 <?php endif; ?>
