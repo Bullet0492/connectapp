@@ -202,16 +202,10 @@ require_once __DIR__ . '/../includes/header.php';
                 <tr><td class="text-muted">Website</td><td><a href="<?= h($klant['website']) ?>" target="_blank"><?= h($klant['website']) ?></a></td></tr>
                 <?php endif; ?>
                 <?php if (!empty($klant['vps'])): ?>
-                <tr>
-                    <td class="text-muted">VPS</td>
-                    <td><span class="badge rounded-pill text-bg-info fw-semibold px-2 py-1"><i class="ri-server-line me-1"></i><?= h($klant['vps']) ?></span></td>
-                </tr>
+                <tr><td class="text-muted">VPS</td><td><i class="ri-server-line me-1 text-muted"></i><?= h($klant['vps']) ?></td></tr>
                 <?php endif; ?>
                 <?php if (!empty($klant['beheerder'])): ?>
-                <tr>
-                    <td class="text-muted">Beheerder</td>
-                    <td><span class="badge rounded-pill text-bg-secondary fw-semibold px-2 py-1"><i class="ri-user-settings-line me-1"></i><?= h($klant['beheerder']) ?></span></td>
-                </tr>
+                <tr><td class="text-muted">Beheerder</td><td><i class="ri-user-settings-line me-1 text-muted"></i><?= h($klant['beheerder']) ?></td></tr>
                 <?php endif; ?>
             </table>
         </div>
@@ -289,23 +283,18 @@ require_once __DIR__ . '/../includes/header.php';
             <div class="d-flex flex-column gap-2">
                 <?php if ($ys_overzicht): ?>
                 <div class="d-flex align-items-center gap-2">
-                    <img src="https://www.mister-voip.nl/wp-content/uploads/2025/02/Yeastar_Symbol.png" height="20" alt="Yeastar" title="Yeastar" style="object-fit:contain;">
+                    <img src="https://www.mister-voip.nl/wp-content/uploads/2025/02/Yeastar_Symbol.png" height="20" alt="Yeastar" style="object-fit:contain;">
                     <span class="fw-medium small">Yeastar</span>
-                    <?php if (!empty($ys_overzicht['admin_url'])): ?>
-                    <a href="<?= h($ys_overzicht['admin_url']) ?>" target="_blank" class="small text-muted ms-1"><i class="ri-external-link-line"></i></a>
-                    <?php endif; ?>
                 </div>
                 <?php endif; ?>
                 <?php if (!empty($simpbx['actief'])): ?>
                 <div class="d-flex align-items-center gap-2">
-                    <img src="https://benfmedia.simpbx.net/favicon.ico" height="18" alt="SimPBX" title="SimPBX" style="object-fit:contain;" onerror="this.style.display='none'">
-                    <span class="fw-medium small">SimPBX</span>
+                    <span class="fw-medium small" style="color:#2563eb;">SimPBX</span>
                 </div>
                 <?php endif; ?>
                 <?php if (!empty($ziggo['actief'])): ?>
                 <div class="d-flex align-items-center gap-2">
-                    <img src="https://vodafoneziggo.scene7.com/is/content/vodafoneziggo/ziggo-logo-orange-v1" height="16" alt="Ziggo" title="Ziggo" style="object-fit:contain;">
-                    <span class="fw-medium small">Ziggo</span>
+                    <img src="https://vodafoneziggo.scene7.com/is/content/vodafoneziggo/ziggo-logo-orange-v1" height="16" alt="Ziggo" style="object-fit:contain;">
                 </div>
                 <?php endif; ?>
             </div>

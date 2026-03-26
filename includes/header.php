@@ -132,8 +132,7 @@ $base = basis_url();
     <button class="hamburger" onclick="toggleSidebar()" aria-label="Menu">
         <i class="ri-menu-line" style="font-size:22px;"></i>
     </button>
-    <img src="<?= $base ?>/images/logo.png" alt="Connect4IT" style="height:28px;" onerror="this.style.display='none'">
-    <span class="brand">Connect4IT</span>
+    <img src="<?= $base ?>/images/logo.png" alt="Connect4IT" style="height:32px;" onerror="this.style.display='none'">
 </div>
 
 <!-- Overlay -->
@@ -142,8 +141,7 @@ $base = basis_url();
 <div class="sidebar" id="sidebar">
     <div class="sidebar-logo">
         <a href="<?= $base ?>/klanten/index.php" class="d-flex align-items-center gap-2 text-decoration-none">
-            <img src="<?= $base ?>/images/logo.png" alt="Connect4IT" onerror="this.style.display='none'">
-            <span style="font-size:16px;font-weight:700;color:#185E9B;letter-spacing:.3px;">Connect4IT</span>
+            <img src="<?= $base ?>/images/logo.png" alt="Connect4IT" style="height:40px;" onerror="this.style.display='none'">
         </a>
     </div>
     <ul class="sidebar-nav">
