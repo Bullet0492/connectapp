@@ -3,12 +3,26 @@
  * SCT API — aanmaken secret.
  * Auth vereist. Verwacht JSON body.
  */
+header('Content-Type: application/json; charset=utf-8');
+
+// Vangnet: elke fatal error / exception → JSON response
+set_exception_handler(function ($e) {
+    http_response_code(500);
+    echo json_encode(['ok' => false, 'fout' => 'Serverfout: ' . $e->getMessage()]);
+    exit;
+});
+register_shutdown_function(function () {
+    $err = error_get_last();
+    if ($err && in_array($err['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
+        if (!headers_sent()) http_response_code(500);
+        echo json_encode(['ok' => false, 'fout' => 'Fatale fout: ' . $err['message']]);
+    }
+});
+
 require_once __DIR__ . '/../../includes/db.php';
 require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../includes/functions.php';
 require_once __DIR__ . '/../includes/sct_functions.php';
-
-header('Content-Type: application/json; charset=utf-8');
 
 sessie_start();
 if (!is_ingelogd()) {
