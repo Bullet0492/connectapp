@@ -108,7 +108,7 @@ if ($type === 'file') {
         echo json_encode(['ok' => false, 'fout' => 'IV ongeldig.']);
         exit;
     }
-    if ($meta_ct === '' || strlen($meta_ct) > 4096) {
+    if ($meta_ct === '' || strlen($meta_ct) > 16384) {
         http_response_code(400);
         echo json_encode(['ok' => false, 'fout' => 'Metadata ongeldig.']);
         exit;

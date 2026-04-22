@@ -167,6 +167,13 @@ $base = rtrim(BASE_URL, '/');
           <span class="text-muted" id="sctDlMeta"></span>
         </div>
       </div>
+
+      <div id="sctDlToelichtingWrap" class="mb-3" style="display:none;">
+        <label class="form-label fw-semibold small mb-1">
+          <i class="ri-chat-quote-line me-1"></i> Toelichting van de verzender
+        </label>
+        <div id="sctDlToelichting" class="sct-bericht" style="max-height:220px;"></div>
+      </div>
       <div class="d-flex gap-2">
         <button class="btn btn-primary" id="sctDownloadOpnieuw">
           <i class="ri-download-2-line me-1"></i> Bestand opslaan
@@ -201,7 +208,7 @@ $base = rtrim(BASE_URL, '/');
   window.SCT_TYPE = <?= json_encode($secret['type'] ?? 'text') ?>;
   window.SCT_API_BASE = <?= json_encode($base . '/sct/api') ?>;
 </script>
-<script src="<?= h($base) ?>/sct/assets/sct-read.js?v=2"></script>
+<script src="<?= h($base) ?>/sct/assets/sct-read.js?v=3"></script>
 <?php endif; ?>
 
 </body>

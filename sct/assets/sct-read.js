@@ -21,6 +21,8 @@
   const bestandBox = document.getElementById('sctBestandBox');
   const dlNaamEl = document.getElementById('sctDlNaam');
   const dlMetaEl = document.getElementById('sctDlMeta');
+  const dlToelichtingWrap = document.getElementById('sctDlToelichtingWrap');
+  const dlToelichtingEl = document.getElementById('sctDlToelichting');
   const dlOpnieuwBtn = document.getElementById('sctDownloadOpnieuw');
   const sluitBtn2 = document.getElementById('sctSluit2');
 
@@ -158,6 +160,13 @@
 
     dlNaamEl.textContent = meta.naam || 'bestand';
     dlMetaEl.textContent = ' · ' + formatBytes(blob.size);
+
+    if (meta.toelichting && dlToelichtingWrap && dlToelichtingEl) {
+      dlToelichtingEl.textContent = meta.toelichting;
+      dlToelichtingWrap.style.display = 'block';
+    } else if (dlToelichtingWrap) {
+      dlToelichtingWrap.style.display = 'none';
+    }
 
     bestandBox.style.display = 'block';
     tekstBox.style.display = 'none';

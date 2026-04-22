@@ -33,6 +33,7 @@
   const fileNaamEl = document.getElementById('sctBestandNaam');
   const fileMetaEl = document.getElementById('sctBestandMeta');
   const fileWisBtn = document.getElementById('sctBestandWis');
+  const toelichtingEl = document.getElementById('sctToelichting');
 
   const MAX_BESTAND = window.SCT_MAX_BESTAND || 26214400;
   let modus = 'tekst';  // 'tekst' of 'bestand'
@@ -155,18 +156,19 @@
     };
   }
 
-  async function versleutelBestand(bestand) {
+  async function versleutelBestand(bestand, toelichting) {
     const key = await genereerKey();
 
     // Bestand zelf versleutelen
     const buf = await bestand.arrayBuffer();
     const { ct: fileCt, iv: fileIv } = await versleutelBuffer(key, buf);
 
-    // Bestandsnaam apart versleutelen met zelfde sleutel maar eigen IV
+    // Metadata (bestandsnaam, mime, toelichting) apart versleutelen met zelfde sleutel, eigen IV
     const meta = JSON.stringify({
       naam: bestand.name || 'bestand',
       type: bestand.type || 'application/octet-stream',
       grootte: bestand.size,
+      toelichting: toelichting || '',
     });
     const { ct: metaCt, iv: metaIv } = await versleutelBuffer(key, new TextEncoder().encode(meta));
 
@@ -214,7 +216,10 @@
       throw new Error('Bestand is te groot (max ' + formatBytes(MAX_BESTAND) + ').');
     }
 
-    const enc = await versleutelBestand(gekozenBestand);
+    const toelichting = (toelichtingEl && toelichtingEl.value) ? toelichtingEl.value : '';
+    if (toelichting.length > 5000) throw new Error('Toelichting is te lang (max 5.000 tekens).');
+
+    const enc = await versleutelBestand(gekozenBestand, toelichting);
 
     const fd = new FormData();
     fd.append('type', 'file');
@@ -254,7 +259,7 @@
     try {
       const { data, key } = modus === 'bestand' ? await verzendBestand() : await verzendTekst();
 
-      const link = data.base_url + '/sct/v.php?id=' + encodeURIComponent(data.id) + '#' + key;
+      const link = data.base_url + '/s/' + encodeURIComponent(data.id) + '#' + key;
       linkEl.value = link;
       const typeLabel = data.type === 'file' ? 'Bestand' : 'Bericht';
       metaEl.textContent = typeLabel + '-ID: ' + data.id + '  ·  Verloopt automatisch op: ' + data.verloopt_op;
@@ -274,6 +279,7 @@
     berichtEl.value = '';
     if (wachtwoordEl) wachtwoordEl.value = '';
     if (notifyEl) notifyEl.value = '';
+    if (toelichtingEl) toelichtingEl.value = '';
     gekozenBestand = null;
     fileEl.value = '';
     fileInfoEl.style.display = 'none';

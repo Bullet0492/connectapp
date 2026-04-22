@@ -5,6 +5,12 @@
     RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 </IfModule>
 
+# ─── Korte link voor SCT: /s/<id> → /sct/v.php?id=<id> ───────────────────────
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^s/([a-zA-Z0-9]{24})/?$ sct/v.php?id=$1 [L,QSA]
+</IfModule>
+
 # ─── Directory listings uitschakelen ─────────────────────────────────────────
 Options -Indexes
 

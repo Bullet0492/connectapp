@@ -75,6 +75,13 @@ require_once __DIR__ . '/../includes/header.php';
                 </div>
               </div>
             </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Toelichting bij het bestand <span class="text-muted fw-normal">(optioneel)</span></label>
+              <textarea id="sctToelichting" class="form-control" rows="3" maxlength="5000"
+                        placeholder="Bijv. 'Hierbij de inloggegevens van server X — wachtwoord staat in het document.'"></textarea>
+              <div class="form-text">Wordt ook lokaal versleuteld en samen met het bestand verstuurd. Max 5.000 tekens.</div>
+            </div>
           </div>
 
           <div class="row g-3">
@@ -164,6 +171,6 @@ require_once __DIR__ . '/../includes/header.php';
 <script>
   window.SCT_MAX_BESTAND = <?= (int)SCT_MAX_BESTAND ?>;
 </script>
-<script src="<?= $base ?>/sct/assets/sct-create.js?v=2"></script>
+<script src="<?= $base ?>/sct/assets/sct-create.js?v=3"></script>
 
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>
