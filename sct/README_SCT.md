@@ -1,7 +1,7 @@
 # SCT — Secret Connect4IT Transmission
 
 Privnote-achtige module binnen ConnectApp voor het versturen van eenmalig-leesbare,
-end-to-end versleutelde berichten.
+end-to-end versleutelde **berichten én bestanden**.
 
 ## Architectuur in één oogopslag
 
@@ -18,6 +18,11 @@ end-to-end versleutelde berichten.
   "lazy" opgeruimd bij elke leesactie en daarnaast door een cron.
 - **Rate limiting**: max 20 leesacties per IP per 15 minuten (configureerbaar in
   `sct_functions.php`).
+- **Bestanden**: zelfde principe als tekst. Het bestand wordt in de browser AES-GCM
+  versleuteld; alleen ciphertext-bytes gaan naar de server. Ook **bestandsnaam +
+  mime-type** worden apart versleuteld → server is zero-knowledge over de inhoud
+  én de naam. Ciphertext wordt op disk opgeslagen in `sct/storage/<id>.bin`,
+  niet in de DB.
 
 ## Bestanden
 
@@ -33,24 +38,48 @@ sct/
 ├── assets/
 │   ├── sct-create.js      Client-side encryptie
 │   └── sct-read.js        Client-side decryptie
-├── cron/cleanup.php       Cron voor verlopen records
+├── cron/cleanup.php       Cron voor verlopen records + wees-bestanden
+├── storage/               Versleutelde bestanden (.htaccess Deny from all)
 └── includes/sct_functions.php
-migrate_sct.php            (project-root) DB-migratie
+migrate_sct.php            (project-root) DB-migratie v1
+migrate_sct2.php           (project-root) DB-migratie v2: bestand-ondersteuning
 ```
 
 ## Deployment
 
-### 1. DB migratie
+### 1. DB migraties
 ```
 https://www.connect4it.nl/app/migrate_sct.php
+https://www.connect4it.nl/app/migrate_sct2.php   # bestand-ondersteuning
 ```
-(alleen admin-login kan dit starten). Blokkeer het bestand daarna in `.htaccess`:
+(alleen admin-login kan dit starten). Blokkeer beide daarna in `.htaccess`:
 ```apache
-<FilesMatch "^migrate_sct\.php$">
+<FilesMatch "^(migrate_sct|migrate_sct2)\.php$">
     Order allow,deny
     Deny from all
 </FilesMatch>
 ```
+
+### 1b. Storage map (eenmalig op productie)
+```
+mkdir -p /var/www/app/sct/storage
+chown www-data:www-data /var/www/app/sct/storage
+chmod 700 /var/www/app/sct/storage
+```
+De map bevat al een `.htaccess` met `Deny from all` zodat de bestanden niet
+direct via HTTP opvraagbaar zijn.
+
+### 1c. PHP upload-limieten
+Standaard staat PHP op `upload_max_filesize=8M` / `post_max_size=8M`. Voor de
+bestand-modus moet dit hoger:
+```ini
+; /etc/php/8.x/fpm/php.ini  (of apache-conf.d/uploads.ini)
+upload_max_filesize = 30M
+post_max_size       = 32M
+memory_limit        = 128M
+```
+(SCT-cap zelf is 25 MB plaintext — pas `SCT_MAX_BESTAND` in
+`sct/includes/sct_functions.php` aan als je wilt afwijken.)
 
 ### 2. Cron token in config.php
 Voeg toe (genereer eenmalig een sterke random string):

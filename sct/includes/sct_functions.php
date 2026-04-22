@@ -24,12 +24,40 @@ const SCT_RETENTIE_OPTIES = [
     168 => '7 dagen',
 ];
 
-/** Max grootte ciphertext in base64 (ruwweg 64 KB plaintext). */
+/** Max grootte ciphertext in base64 (ruwweg 64 KB plaintext) — voor tekstberichten. */
 const SCT_MAX_CIPHERTEXT = 131072;
+
+/** Max grootte bestand (plaintext) in bytes — 25 MB. */
+const SCT_MAX_BESTAND = 26214400;
 
 /** Rate limit: max pogingen per IP binnen venster. */
 const SCT_RATELIMIT_POGINGEN = 20;
 const SCT_RATELIMIT_VENSTER_MIN = 15;
+
+/** Absoluut pad naar de map waar versleutelde bestanden staan. */
+function sct_storage_dir(): string {
+    return __DIR__ . '/../storage';
+}
+
+/** Pad naar het versleutelde bestand van een gegeven secret. */
+function sct_storage_pad(string $id): string {
+    return sct_storage_dir() . '/' . $id . '.bin';
+}
+
+/**
+ * Verwijder een secret volledig (DB + disk). Stil bij ontbrekend bestand.
+ */
+function sct_verwijder_secret_volledig(string $id): void {
+    try {
+        db()->prepare('DELETE FROM sct_secrets WHERE id = ?')->execute([$id]);
+    } catch (PDOException $e) {
+        // ignore
+    }
+    $pad = sct_storage_pad($id);
+    if (is_file($pad)) {
+        @unlink($pad);
+    }
+}
 
 /**
  * Genereer een uniek 24-karakter token (base32-achtig, URL-veilig).
@@ -94,9 +122,33 @@ function sct_verwijder_verlopen(): int {
     $placeholders = implode(',', array_fill(0, count($ids), '?'));
     $pdo->prepare("DELETE FROM sct_secrets WHERE id IN ($placeholders)")->execute($ids);
     foreach ($ids as $id) {
+        $pad = sct_storage_pad($id);
+        if (is_file($pad)) @unlink($pad);
         sct_log($id, 'verlopen', '0.0.0.0', 'cron');
     }
     return count($ids);
+}
+
+/**
+ * Ruim wees-bestanden op (bestand op disk zonder DB-record).
+ * Alleen bestanden ouder dan 1 dag worden opgeruimd — vers geüploade maar
+ * nog-niet-gecommitte uploads blijven zo buiten schot.
+ */
+function sct_verwijder_weesbestanden(): int {
+    $dir = sct_storage_dir();
+    if (!is_dir($dir)) return 0;
+    $pdo = db();
+    $verwijderd = 0;
+    foreach (glob($dir . '/*.bin') ?: [] as $pad) {
+        if (filemtime($pad) > time() - 86400) continue; // nog te jong
+        $id = basename($pad, '.bin');
+        $stmt = $pdo->prepare('SELECT 1 FROM sct_secrets WHERE id = ?');
+        $stmt->execute([$id]);
+        if (!$stmt->fetchColumn()) {
+            if (@unlink($pad)) $verwijderd++;
+        }
+    }
+    return $verwijderd;
 }
 
 /**

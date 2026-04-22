@@ -16,7 +16,8 @@ sct_verwijder_verlopen();
 
 // Actieve secrets van deze gebruiker
 $stmt = db()->prepare(
-    'SELECT id, has_password, notify_email, retentie_uren, aangemaakt_op, verloopt_op
+    'SELECT id, type, has_password, notify_email, retentie_uren, aangemaakt_op, verloopt_op,
+            bestandsgrootte, mimetype
        FROM sct_secrets
       WHERE sender_user_id = ?
       ORDER BY aangemaakt_op DESC'
@@ -71,6 +72,7 @@ require_once __DIR__ . '/../includes/header.php';
           <thead class="small text-muted">
             <tr>
               <th class="ps-4">ID</th>
+              <th>Type</th>
               <th>Aangemaakt</th>
               <th>Verloopt</th>
               <th>Opties</th>
@@ -79,9 +81,32 @@ require_once __DIR__ . '/../includes/header.php';
             </tr>
           </thead>
           <tbody>
-          <?php foreach ($actief as $s): ?>
+          <?php
+          function sct_format_bytes(int $n): string {
+              if ($n < 1024) return $n . ' B';
+              if ($n < 1048576) return number_format($n / 1024, 1) . ' KB';
+              if ($n < 1073741824) return number_format($n / 1048576, 1) . ' MB';
+              return number_format($n / 1073741824, 2) . ' GB';
+          }
+          foreach ($actief as $s): ?>
             <tr>
               <td class="ps-4 font-monospace small"><?= h(substr($s['id'], 0, 10)) ?>…</td>
+              <td class="small">
+                <?php if (($s['type'] ?? 'text') === 'file'): ?>
+                  <span class="badge bg-info-subtle text-info-emphasis">
+                    <i class="ri-attachment-2"></i> Bestand
+                  </span>
+                  <?php if (!empty($s['bestandsgrootte'])): ?>
+                    <div class="text-muted" style="font-size:11px;">
+                      <?= h(sct_format_bytes((int)$s['bestandsgrootte'])) ?>
+                    </div>
+                  <?php endif; ?>
+                <?php else: ?>
+                  <span class="badge bg-secondary-subtle text-secondary-emphasis">
+                    <i class="ri-chat-3-line"></i> Tekst
+                  </span>
+                <?php endif; ?>
+              </td>
               <td class="small"><?= h(date('d-m-Y H:i', strtotime($s['aangemaakt_op']))) ?></td>
               <td class="small">
                 <?= h(date('d-m-Y H:i', strtotime($s['verloopt_op']))) ?>

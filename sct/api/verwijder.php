@@ -29,6 +29,8 @@ $stmt = db()->prepare('DELETE FROM sct_secrets WHERE id = ? AND sender_user_id =
 $stmt->execute([$id, $gebruiker['id']]);
 
 if ($stmt->rowCount() > 0) {
+    $pad = sct_storage_pad($id);
+    if (is_file($pad)) @unlink($pad);
     sct_log($id, 'verlopen');
     log_actie('sct_ingetrokken', 'id=' . $id);
     flash_set('succes', 'Bericht ingetrokken. De link is direct ongeldig.');

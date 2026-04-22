@@ -30,6 +30,7 @@ if (!$is_cli) {
 }
 
 $aantal = sct_verwijder_verlopen();
+$wezen  = sct_verwijder_weesbestanden();
 
 // Oude log entries opruimen (> 90 dagen)
 try {
@@ -40,4 +41,5 @@ try {
 
 echo "[SCT cron] " . date('Y-m-d H:i:s') . "\n";
 echo "  Verwijderde verlopen secrets : {$aantal}\n";
+echo "  Opgeruimde wees-bestanden    : {$wezen}\n";
 echo "  Opgeruimde log-regels (>90d) : {$log_opgeruimd}\n";

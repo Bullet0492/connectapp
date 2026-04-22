@@ -100,17 +100,30 @@ $base = rtrim(BASE_URL, '/');
 
 <?php else: ?>
 
-  <h1 class="sct-titel">Vertrouwelijk bericht ontvangen</h1>
+  <?php $is_file = (($secret['type'] ?? 'text') === 'file'); ?>
+
+  <h1 class="sct-titel">
+    <?= $is_file ? 'Vertrouwelijk bestand ontvangen' : 'Vertrouwelijk bericht ontvangen' ?>
+  </h1>
   <p class="sct-sub">
-    Dit bericht is eenmalig leesbaar. Zodra u op <strong>"Bericht openen"</strong> klikt,
-    wordt het onmiddellijk en onherstelbaar verwijderd.
+    <?php if ($is_file): ?>
+      Dit bestand is eenmalig te downloaden. Zodra u op <strong>"Bestand downloaden"</strong>
+      klikt, wordt het onmiddellijk en onherstelbaar van onze server verwijderd.
+    <?php else: ?>
+      Dit bericht is eenmalig leesbaar. Zodra u op <strong>"Bericht openen"</strong> klikt,
+      wordt het onmiddellijk en onherstelbaar verwijderd.
+    <?php endif; ?>
   </p>
 
   <div id="sctStap1">
     <div class="warn-box">
       <i class="ri-alarm-warning-line me-1"></i>
-      Lees het bericht pas wanneer u er klaar voor bent. Sluit onbevoegde meekijkers uit;
-      zorg dat u het bericht direct kunt kopiëren of noteren &mdash; u krijgt geen tweede kans.
+      <?php if ($is_file): ?>
+        Sla het bestand direct op &mdash; u krijgt geen tweede kans. Sluit onbevoegde meekijkers uit.
+      <?php else: ?>
+        Lees het bericht pas wanneer u er klaar voor bent. Sluit onbevoegde meekijkers uit;
+        zorg dat u het bericht direct kunt kopiëren of noteren &mdash; u krijgt geen tweede kans.
+      <?php endif; ?>
     </div>
 
     <?php if (!empty($secret['has_password'])): ?>
@@ -122,24 +135,54 @@ $base = rtrim(BASE_URL, '/');
     <?php endif; ?>
 
     <button id="sctOpen" class="btn btn-primary w-100">
-      <i class="ri-eye-line me-1"></i> Bericht openen
+      <?php if ($is_file): ?>
+        <i class="ri-download-2-line me-1"></i> Bestand downloaden
+      <?php else: ?>
+        <i class="ri-eye-line me-1"></i> Bericht openen
+      <?php endif; ?>
     </button>
     <div id="sctFout" class="alert alert-danger mt-3 small" style="display:none;"></div>
   </div>
 
   <div id="sctStap2" style="display:none;">
-    <div class="sct-bericht" id="sctTekst"></div>
-    <div class="d-flex gap-2 mt-3">
-      <button class="btn btn-outline-secondary btn-sm" id="sctKopieer">
-        <i class="ri-file-copy-line me-1"></i> Kopieer tekst
-      </button>
-      <button class="btn btn-outline-secondary btn-sm ms-auto" id="sctSluit">
-        <i class="ri-close-line me-1"></i> Sluit venster
-      </button>
+    <div id="sctTekstBox" style="display:none;">
+      <div class="sct-bericht" id="sctTekst"></div>
+      <div class="d-flex gap-2 mt-3">
+        <button class="btn btn-outline-secondary btn-sm" id="sctKopieer">
+          <i class="ri-file-copy-line me-1"></i> Kopieer tekst
+        </button>
+        <button class="btn btn-outline-secondary btn-sm ms-auto" id="sctSluit">
+          <i class="ri-close-line me-1"></i> Sluit venster
+        </button>
+      </div>
     </div>
+
+    <div id="sctBestandBox" style="display:none;">
+      <div class="alert alert-success mb-3">
+        <div class="fw-semibold mb-1">
+          <i class="ri-check-line me-1"></i> Bestand ontsleuteld
+        </div>
+        <div class="small">
+          <strong id="sctDlNaam"></strong>
+          <span class="text-muted" id="sctDlMeta"></span>
+        </div>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-primary" id="sctDownloadOpnieuw">
+          <i class="ri-download-2-line me-1"></i> Bestand opslaan
+        </button>
+        <button class="btn btn-outline-secondary ms-auto" id="sctSluit2">
+          <i class="ri-close-line me-1"></i> Sluit venster
+        </button>
+      </div>
+      <div class="mt-3 small text-muted">
+        Tip: als de download niet automatisch start, klik dan op "Bestand opslaan".
+      </div>
+    </div>
+
     <div class="mt-3 small text-muted">
       <i class="ri-check-double-line text-success me-1"></i>
-      Dit bericht is nu van onze server verwijderd. Herladen van deze pagina toont niets meer.
+      Dit is nu van onze server verwijderd. Herladen van deze pagina toont niets meer.
     </div>
   </div>
 
@@ -155,9 +198,10 @@ $base = rtrim(BASE_URL, '/');
 <script>
   window.SCT_ID = <?= json_encode($id) ?>;
   window.SCT_HAS_PASSWORD = <?= !empty($secret['has_password']) ? 'true' : 'false' ?>;
+  window.SCT_TYPE = <?= json_encode($secret['type'] ?? 'text') ?>;
   window.SCT_API_BASE = <?= json_encode($base . '/sct/api') ?>;
 </script>
-<script src="<?= h($base) ?>/sct/assets/sct-read.js?v=1"></script>
+<script src="<?= h($base) ?>/sct/assets/sct-read.js?v=2"></script>
 <?php endif; ?>
 
 </body>
