@@ -16,7 +16,7 @@ sct_verwijder_verlopen();
 
 // Actieve secrets van deze gebruiker
 $stmt = db()->prepare(
-    'SELECT id, type, has_password, notify_email, retentie_uren, aangemaakt_op, verloopt_op,
+    'SELECT id, type, has_password, notify_email, label, retentie_uren, aangemaakt_op, verloopt_op,
             bestandsgrootte, mimetype
        FROM sct_secrets
       WHERE sender_user_id = ?
@@ -72,6 +72,7 @@ require_once __DIR__ . '/../includes/header.php';
           <thead class="small text-muted">
             <tr>
               <th class="ps-4">ID</th>
+              <th>Label</th>
               <th>Type</th>
               <th>Aangemaakt</th>
               <th>Verloopt</th>
@@ -91,6 +92,13 @@ require_once __DIR__ . '/../includes/header.php';
           foreach ($actief as $s): ?>
             <tr>
               <td class="ps-4 font-monospace small"><?= h(substr($s['id'], 0, 10)) ?>…</td>
+              <td class="small">
+                <?php if (!empty($s['label'])): ?>
+                  <span class="fw-semibold"><?= h($s['label']) ?></span>
+                <?php else: ?>
+                  <span class="text-muted">—</span>
+                <?php endif; ?>
+              </td>
               <td class="small">
                 <?php if (($s['type'] ?? 'text') === 'file'): ?>
                   <span class="badge bg-info-subtle text-info-emphasis">

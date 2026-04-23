@@ -10,6 +10,7 @@
   const retentieEl = document.getElementById('sctRetentie');
   const wachtwoordEl = document.getElementById('sctWachtwoord');
   const notifyEl = document.getElementById('sctNotify');
+  const labelEl = document.getElementById('sctLabel');
   const submitBtn = document.getElementById('sctSubmit');
   const csrfEl = document.getElementById('sctCsrf');
   const resultaatBox = document.getElementById('sctResultaat');
@@ -203,6 +204,7 @@
         retentie_uren: parseInt(retentieEl.value, 10),
         wachtwoord: wachtwoordEl.value || null,
         notify_email: notifyEl.value.trim() || null,
+        label: (labelEl && labelEl.value.trim()) || null,
       }),
     });
     const data = await res.json();
@@ -233,6 +235,8 @@
     if (wachtwoordEl.value) fd.append('wachtwoord', wachtwoordEl.value);
     const notify = notifyEl.value.trim();
     if (notify) fd.append('notify_email', notify);
+    const label = (labelEl && labelEl.value.trim()) || '';
+    if (label) fd.append('label', label);
     fd.append('bestand', enc.fileBlob, 'ciphertext.bin');
 
     const res = await fetch('api/create.php', {
@@ -279,6 +283,7 @@
     berichtEl.value = '';
     if (wachtwoordEl) wachtwoordEl.value = '';
     if (notifyEl) notifyEl.value = '';
+    if (labelEl) labelEl.value = '';
     if (toelichtingEl) toelichtingEl.value = '';
     gekozenBestand = null;
     fileEl.value = '';

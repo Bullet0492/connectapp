@@ -103,6 +103,13 @@ require_once __DIR__ . '/../includes/header.php';
           </div>
 
           <div class="mt-3">
+            <label class="form-label fw-semibold">Label <span class="text-muted fw-normal">(voor uzelf)</span></label>
+            <input type="text" id="sctLabel" class="form-control" maxlength="150"
+                   placeholder="Bijv. 'Wachtwoord klant Jansen' of 'VPN-gegevens collega Piet'">
+            <div class="form-text">Alleen zichtbaar in uw eigen overzicht, niet voor de ontvanger.</div>
+          </div>
+
+          <div class="mt-3">
             <label class="form-label fw-semibold">Notificatie-mail (optioneel)</label>
             <input type="email" id="sctNotify" class="form-control"
                    placeholder="ontvanger@voorbeeld.nl — u ontvangt bericht zodra gelezen">
@@ -171,6 +178,6 @@ require_once __DIR__ . '/../includes/header.php';
 <script>
   window.SCT_MAX_BESTAND = <?= (int)SCT_MAX_BESTAND ?>;
 </script>
-<script src="<?= $base ?>/sct/assets/sct-create.js?v=3"></script>
+<script src="<?= $base ?>/sct/assets/sct-create.js?v=4"></script>
 
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

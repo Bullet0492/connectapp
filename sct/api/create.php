@@ -65,6 +65,8 @@ if (!hash_equals(csrf_token(), (string)($in['csrf_token'] ?? ''))) {
 $retentie   = (int)($in['retentie_uren'] ?? 0);
 $wachtwoord = $in['wachtwoord'] ?? null;
 $notify     = trim((string)($in['notify_email'] ?? ''));
+$label      = trim((string)($in['label'] ?? ''));
+if (mb_strlen($label) > 150) $label = mb_substr($label, 0, 150);
 
 if (!array_key_exists($retentie, SCT_RETENTIE_OPTIES)) {
     http_response_code(400);
@@ -164,14 +166,15 @@ if ($type === 'file') {
             'INSERT INTO sct_secrets
                 (id, type, ciphertext, iv, bestandsnaam_ct, bestandsnaam_iv, mimetype, bestandsgrootte,
                  opslag_pad, has_password, password_hash,
-                 sender_user_id, sender_naam, sender_email, notify_email,
+                 sender_user_id, sender_naam, sender_email, notify_email, label,
                  retentie_uren, aangemaakt_op, verloopt_op)
-             VALUES (?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+             VALUES (?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
         )->execute([
             $id, 'file', $iv, $meta_ct, $meta_iv, $mimetype, $ct_bytes,
             basename($pad), $heeft_ww ? 1 : 0, $ww_hash,
             $gebruiker['id'], $gebruiker['naam'], $sender_email,
-            $notify !== '' ? $notify : null, $retentie, $aangemaakt, $verloopt,
+            $notify !== '' ? $notify : null, $label !== '' ? $label : null,
+            $retentie, $aangemaakt, $verloopt,
         ]);
     } catch (PDOException $e) {
         @unlink($pad);
@@ -212,13 +215,14 @@ try {
     db()->prepare(
         'INSERT INTO sct_secrets
             (id, type, ciphertext, iv, has_password, password_hash,
-             sender_user_id, sender_naam, sender_email, notify_email,
+             sender_user_id, sender_naam, sender_email, notify_email, label,
              retentie_uren, aangemaakt_op, verloopt_op)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
     )->execute([
         $id, 'text', $ciphertext, $iv, $heeft_ww ? 1 : 0, $ww_hash,
         $gebruiker['id'], $gebruiker['naam'], $sender_email,
-        $notify !== '' ? $notify : null, $retentie, $aangemaakt, $verloopt,
+        $notify !== '' ? $notify : null, $label !== '' ? $label : null,
+        $retentie, $aangemaakt, $verloopt,
     ]);
 } catch (PDOException $e) {
     http_response_code(500);

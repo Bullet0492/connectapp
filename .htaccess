@@ -38,6 +38,12 @@ Options -Indexes
     Allow from all
 </FilesMatch>
 
+# migrate_sct_label tijdelijk toegankelijk
+<FilesMatch "^migrate_sct_label\.php$">
+    Order allow,deny
+    Allow from all
+</FilesMatch>
+
 
 # ─── Security headers ────────────────────────────────────────────────────────
 <IfModule mod_headers.c>
