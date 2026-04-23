@@ -112,6 +112,12 @@ $base = basis_url();
         <span>Intelly: <?= h($klant['intra_id']) ?></span>
     </div>
     <?php endif; ?>
+    <?php if (!empty($klant['intranet_id'])): ?>
+    <div class="info-rij">
+        <i class="ri-hashtag"></i>
+        <span>Intranet: <?= h($klant['intranet_id']) ?></span>
+    </div>
+    <?php endif; ?>
     <?php if (empty($klant['telefoon']) && empty($klant['email']) && empty($klant['adres'])): ?>
     <div class="info-rij text-muted">Geen contactgegevens.</div>
     <?php endif; ?>

@@ -210,6 +210,9 @@ function beheerder_kleur($naam, $kleuren) {
                 <?php if (!empty($klant['intra_id'])): ?>
                 <tr><td class="text-muted" style="width:40%">Intelly ID</td><td><?= h($klant['intra_id']) ?></td></tr>
                 <?php endif; ?>
+                <?php if (!empty($klant['intranet_id'])): ?>
+                <tr><td class="text-muted" style="width:40%">Intranet ID</td><td><?= h($klant['intranet_id']) ?></td></tr>
+                <?php endif; ?>
                 <tr><td class="text-muted" style="width:40%">E-mail</td><td><?= h($klant['email'] ?: '—') ?></td></tr>
                 <tr><td class="text-muted">Telefoon</td><td><?= h($klant['telefoon'] ?: '—') ?></td></tr>
                 <tr><td class="text-muted">Adres</td><td>
@@ -2144,6 +2147,10 @@ function kopieerSbxWw(klant_id, btn) {
                             <label class="form-label fw-medium">Intelly ID</label>
                             <input type="text" name="intra_id" class="form-control rounded-3" value="<?= h($klant['intra_id'] ?? '') ?>">
                         </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-medium">Intranet ID</label>
+                            <input type="text" name="intranet_id" class="form-control rounded-3" value="<?= h($klant['intranet_id'] ?? '') ?>">
+                        </div>
                         <?php
                         $vaste_beheerders = ['Connect4IT','Lars Manders','Frank Lendering','Bitcom','Kirkels','Academy'];
                         $huidig_beheerder = $klant['beheerder'] ?? '';
@@ -2167,7 +2174,7 @@ function kopieerSbxWw(klant_id, btn) {
                             <label class="form-label fw-medium">VPS</label>
                             <select name="vps" class="form-select rounded-3">
                                 <option value="">— Geen VPS —</option>
-                                <?php foreach (['vps1','vps2','vps3','vps4','vps5'] as $v): ?>
+                                <?php foreach (['vps1','vps2','vps3','vps4','vps5','vps6'] as $v): ?>
                                 <option value="<?= $v ?>.connect4it.hix.nl" <?= ($klant['vps'] ?? '') === $v.'.connect4it.hix.nl' ? 'selected' : '' ?>><?= $v ?>.connect4it.hix.nl</option>
                                 <?php endforeach; ?>
                             </select>

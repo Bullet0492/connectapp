@@ -14,7 +14,7 @@ $per_pagina = 15;
 // POST: opslaan of bijwerken
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();
-    $velden = ['naam','bedrijf','adres','postcode','stad','telefoon','email','website','intra_id','notities','vps','beheerder'];
+    $velden = ['naam','bedrijf','adres','postcode','stad','telefoon','email','website','intra_id','intranet_id','notities','vps','beheerder'];
     if (trim($_POST['beheerder'] ?? '') === 'anders') {
         $_POST['beheerder'] = trim($_POST['beheerder_anders'] ?? '') ?: null;
     }
@@ -27,15 +27,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($data['naam'] !== '') {
         if ($bewerken_id) {
             $db->prepare("UPDATE klanten SET naam=:naam, bedrijf=:bedrijf, adres=:adres, postcode=:postcode,
-                stad=:stad, telefoon=:telefoon, email=:email, website=:website, intra_id=:intra_id, notities=:notities, vps=:vps, beheerder=:beheerder
+                stad=:stad, telefoon=:telefoon, email=:email, website=:website, intra_id=:intra_id, intranet_id=:intranet_id, notities=:notities, vps=:vps, beheerder=:beheerder
                 WHERE id=:id")->execute(array_merge($data, ['id' => $bewerken_id]));
             log_actie('klant_bijgewerkt', 'Naam: ' . $data['naam'] . ', ID: ' . $bewerken_id);
             flash_set('succes', 'Klant bijgewerkt.');
             header('Location: detail.php?id=' . $bewerken_id);
             exit;
         } else {
-            $db->prepare("INSERT INTO klanten (naam,bedrijf,adres,postcode,stad,telefoon,email,website,intra_id,notities,vps,beheerder)
-                VALUES (:naam,:bedrijf,:adres,:postcode,:stad,:telefoon,:email,:website,:intra_id,:notities,:vps,:beheerder)")
+            $db->prepare("INSERT INTO klanten (naam,bedrijf,adres,postcode,stad,telefoon,email,website,intra_id,intranet_id,notities,vps,beheerder)
+                VALUES (:naam,:bedrijf,:adres,:postcode,:stad,:telefoon,:email,:website,:intra_id,:intranet_id,:notities,:vps,:beheerder)")
                 ->execute($data);
             log_actie('klant_aangemaakt', 'Naam: ' . $data['naam']);
             flash_set('succes', 'Klant aangemaakt.');
@@ -49,8 +49,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $whereStr = '';
 $params   = [];
 if ($zoek !== '') {
-    $whereStr = "WHERE naam LIKE ? OR bedrijf LIKE ? OR email LIKE ? OR telefoon LIKE ? OR adres LIKE ? OR postcode LIKE ? OR stad LIKE ? OR intra_id LIKE ?";
-    $params   = array_fill(0, 8, "%$zoek%");
+    $whereStr = "WHERE naam LIKE ? OR bedrijf LIKE ? OR email LIKE ? OR telefoon LIKE ? OR adres LIKE ? OR postcode LIKE ? OR stad LIKE ? OR intra_id LIKE ? OR intranet_id LIKE ?";
+    $params   = array_fill(0, 9, "%$zoek%");
 }
 
 $telStmt = $db->prepare("SELECT COUNT(*) FROM klanten $whereStr");
@@ -151,6 +151,11 @@ function klant_pagina_url(int $p): string {
             <?php if (!empty($k['intra_id'])): ?>
             <div class="d-flex align-items-center gap-2 text-muted small mb-1">
                 <i class="ri-hashtag" style="font-size:13px;"></i>Intelly: <?= h($k['intra_id']) ?>
+            </div>
+            <?php endif; ?>
+            <?php if (!empty($k['intranet_id'])): ?>
+            <div class="d-flex align-items-center gap-2 text-muted small mb-1">
+                <i class="ri-hashtag" style="font-size:13px;"></i>Intranet: <?= h($k['intranet_id']) ?>
             </div>
             <?php endif; ?>
 
@@ -260,6 +265,11 @@ function klant_pagina_url(int $p): string {
                                    value="<?= $bewerken_klant ? h($bewerken_klant['intra_id'] ?? '') : '' ?>">
                         </div>
                         <div class="col-12 col-md-6">
+                            <label class="form-label fw-medium">Intranet ID</label>
+                            <input type="text" name="intranet_id" class="form-control rounded-3" placeholder="Intranet ID"
+                                   value="<?= $bewerken_klant ? h($bewerken_klant['intranet_id'] ?? '') : '' ?>">
+                        </div>
+                        <div class="col-12 col-md-6">
                             <label class="form-label fw-medium">Beheerder</label>
                             <select name="beheerder" id="klant_beheerder" class="form-select rounded-3" onchange="toggleBeheerderAnders()">
                                 <option value="">— Geen —</option>
@@ -282,7 +292,7 @@ function klant_pagina_url(int $p): string {
                             <label class="form-label fw-medium">VPS</label>
                             <select name="vps" class="form-select rounded-3">
                                 <option value="">— Geen VPS —</option>
-                                <?php foreach (['vps1','vps2','vps3','vps4','vps5'] as $v): ?>
+                                <?php foreach (['vps1','vps2','vps3','vps4','vps5','vps6'] as $v): ?>
                                 <option value="<?= $v ?>.connect4it.hix.nl" <?= ($bewerken_klant ? ($bewerken_klant['vps'] ?? '') : '') === $v . '.connect4it.hix.nl' ? 'selected' : '' ?>>
                                     <?= $v ?>.connect4it.hix.nl
                                 </option>

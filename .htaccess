@@ -32,6 +32,12 @@ Options -Indexes
     Allow from all
 </FilesMatch>
 
+# migrate_intranet tijdelijk toegankelijk
+<FilesMatch "^migrate_intranet\.php$">
+    Order allow,deny
+    Allow from all
+</FilesMatch>
+
 
 # ─── Security headers ────────────────────────────────────────────────────────
 <IfModule mod_headers.c>
