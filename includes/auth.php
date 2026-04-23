@@ -12,6 +12,14 @@ function sessie_start(): void {
         ini_set('session.cookie_samesite', 'Strict');
         ini_set('session.use_strict_mode', '1');
         ini_set('session.gc_maxlifetime',  '7200'); // 2 uur
+        ini_set('session.cookie_lifetime', '7200'); // Cookie overleeft browser-restart
+        // Eigen save_path zodat Debian's systeem-cron de sessies niet na 24 min opruimt
+        $eigen_sessie_pad = __DIR__ . '/../tmp/sessions';
+        if (is_dir($eigen_sessie_pad) && is_writable($eigen_sessie_pad)) {
+            ini_set('session.save_path', $eigen_sessie_pad);
+            ini_set('session.gc_probability', '1');
+            ini_set('session.gc_divisor',     '100');
+        }
         session_start();
     }
 }
