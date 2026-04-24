@@ -111,13 +111,13 @@ require_once __DIR__ . '/../includes/header.php';
         <?php endif; ?>
     </div>
     <div class="d-flex gap-2">
-        <?php if (!empty($klant['acs_network_id'])): ?>
-            <a href="https://cloudx1.draytek.nl/web/nms/#/device/<?= h($klant['acs_network_id']) ?>/device-dashboard"
-               target="_blank" rel="noopener"
-               class="btn btn-outline-danger btn-sm"
-               title="Open in DrayTek VigorACS">
+        <?php if (!empty($klant['acs_network_id']) || !empty($klant['acs_device_naam'])): ?>
+            <button type="button"
+                    class="btn btn-outline-danger btn-sm"
+                    onclick="openAcs(<?= htmlspecialchars(json_encode($klant['acs_device_naam'] ?? ''), ENT_QUOTES) ?>, this)"
+                    title="Open DrayTek VigorACS (device-naam wordt gekopieerd naar klembord — plak in zoekbalk)">
                 <i class="ri-router-line"></i> DrayTek ACS
-            </a>
+            </button>
         <?php endif; ?>
         <a href="<?= $base ?>/qr/label_klant.php?id=<?= $id ?>" class="btn btn-outline-secondary btn-sm" target="_blank" title="QR-label afdrukken">
             <i class="ri-qr-code-line"></i> QR
@@ -2406,6 +2406,19 @@ function kopieerSbxWw(klant_id, btn) {
 <script>
 function openBewerkKlant() {
     new bootstrap.Modal(document.getElementById('modalBewerkKlant')).show();
+}
+
+function openAcs(deviceNaam, btn) {
+    // VigorACS ondersteunt geen deeplinks — we openen root en kopieren de naam zodat
+    // de gebruiker 'm kan plakken in de zoekbalk van VigorACS.
+    window.open('https://cloudx1.draytek.nl/web/nms/', '_blank', 'noopener');
+    if (deviceNaam && navigator.clipboard) {
+        navigator.clipboard.writeText(deviceNaam).then(function() {
+            var origineel = btn.innerHTML;
+            btn.innerHTML = '<i class="ri-check-line"></i> Naam gekopieerd';
+            setTimeout(function() { btn.innerHTML = origineel; }, 2000);
+        });
+    }
 }
 function toggleBewerkBeheerder() {
     var sel = document.getElementById('bk_beheerder');
