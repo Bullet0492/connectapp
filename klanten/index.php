@@ -14,7 +14,7 @@ $per_pagina = 15;
 // POST: opslaan of bijwerken
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();
-    $velden = ['naam','bedrijf','adres','postcode','stad','telefoon','email','website','intra_id','intranet_id','notities','vps','beheerder'];
+    $velden = ['naam','bedrijf','adres','postcode','stad','telefoon','email','website','intra_id','intranet_id','notities','vps','beheerder','acs_network_id','acs_device_naam'];
     if (trim($_POST['beheerder'] ?? '') === 'anders') {
         $_POST['beheerder'] = trim($_POST['beheerder_anders'] ?? '') ?: null;
     }
@@ -34,15 +34,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($data['naam'] !== '') {
         if ($bewerken_id) {
             $db->prepare("UPDATE klanten SET naam=:naam, bedrijf=:bedrijf, adres=:adres, postcode=:postcode,
-                stad=:stad, telefoon=:telefoon, email=:email, website=:website, intra_id=:intra_id, intranet_id=:intranet_id, notities=:notities, vps=:vps, beheerder=:beheerder
+                stad=:stad, telefoon=:telefoon, email=:email, website=:website, intra_id=:intra_id, intranet_id=:intranet_id, notities=:notities, vps=:vps, beheerder=:beheerder,
+                acs_network_id=:acs_network_id, acs_device_naam=:acs_device_naam
                 WHERE id=:id")->execute(array_merge($data, ['id' => $bewerken_id]));
             log_actie('klant_bijgewerkt', 'Naam: ' . $data['naam'] . ', ID: ' . $bewerken_id);
             flash_set('succes', 'Klant bijgewerkt.');
             header('Location: detail.php?id=' . $bewerken_id);
             exit;
         } else {
-            $db->prepare("INSERT INTO klanten (naam,bedrijf,adres,postcode,stad,telefoon,email,website,intra_id,intranet_id,notities,vps,beheerder)
-                VALUES (:naam,:bedrijf,:adres,:postcode,:stad,:telefoon,:email,:website,:intra_id,:intranet_id,:notities,:vps,:beheerder)")
+            $db->prepare("INSERT INTO klanten (naam,bedrijf,adres,postcode,stad,telefoon,email,website,intra_id,intranet_id,notities,vps,beheerder,acs_network_id,acs_device_naam)
+                VALUES (:naam,:bedrijf,:adres,:postcode,:stad,:telefoon,:email,:website,:intra_id,:intranet_id,:notities,:vps,:beheerder,:acs_network_id,:acs_device_naam)")
                 ->execute($data);
             log_actie('klant_aangemaakt', 'Naam: ' . $data['naam']);
             flash_set('succes', 'Klant aangemaakt.');
@@ -307,6 +308,20 @@ function klant_pagina_url(int $p): string {
                             <input type="text" name="beheerder_anders" id="beheerder_anders_input" class="form-control rounded-3" value="<?= $is_anders ? h($bewerken_klant['beheerder'] ?? '') : '' ?>" placeholder="Naam beheerder...">
                         </div>
                         <div class="col-12 col-md-6">
+                            <label class="form-label fw-medium">DrayTek ACS Network ID</label>
+                            <input type="text" name="acs_network_id" class="form-control rounded-3"
+                                   placeholder="bv. 3199"
+                                   value="<?= $bewerken_klant ? h($bewerken_klant['acs_network_id'] ?? '') : '' ?>">
+                            <div class="form-text small">Getal uit de URL in VigorACS: /network/&lt;id&gt;/dashboard</div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-medium">DrayTek device-naam</label>
+                            <input type="text" name="acs_device_naam" class="form-control rounded-3"
+                                   placeholder="bv. 2120Fn_Finance Beheer"
+                                   value="<?= $bewerken_klant ? h($bewerken_klant['acs_device_naam'] ?? '') : '' ?>">
+                            <div class="form-text small">Exacte naam zoals in VigorACS (optioneel).</div>
+                        </div>
+                        <div class="col-12 col-md-6">
                             <label class="form-label fw-medium">VPS</label>
                             <select name="vps" class="form-select rounded-3">
                                 <option value="">— Geen VPS —</option>
@@ -364,7 +379,7 @@ document.getElementById('btn-nieuwe-klant').addEventListener('click', function()
     modal.querySelector('.modal-title').textContent = 'Nieuwe klant';
     var form = modal.querySelector('form');
     form.querySelector('[name="bewerken_id"]').value = '';
-    ['naam','bedrijf','email','telefoon','adres','postcode','stad','website','intra_id','notities','vps','beheerder','beheerder_anders'].forEach(function(f) {
+    ['naam','bedrijf','email','telefoon','adres','postcode','stad','website','intra_id','notities','vps','beheerder','beheerder_anders','acs_network_id','acs_device_naam'].forEach(function(f) {
         var el = form.querySelector('[name="' + f + '"]');
         if (el) el.value = '';
     });

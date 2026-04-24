@@ -102,6 +102,14 @@ require_once __DIR__ . '/../includes/header.php';
         <?php endif; ?>
     </div>
     <div class="d-flex gap-2">
+        <?php if (!empty($klant['acs_network_id'])): ?>
+            <a href="https://cloudx1.draytek.nl/web/nms/#/network/<?= h($klant['acs_network_id']) ?>/dashboard"
+               target="_blank" rel="noopener"
+               class="btn btn-outline-danger btn-sm"
+               title="Open in DrayTek VigorACS">
+                <i class="ri-router-line"></i> DrayTek ACS
+            </a>
+        <?php endif; ?>
         <a href="<?= $base ?>/qr/label_klant.php?id=<?= $id ?>" class="btn btn-outline-secondary btn-sm" target="_blank" title="QR-label afdrukken">
             <i class="ri-qr-code-line"></i> QR
         </a>
