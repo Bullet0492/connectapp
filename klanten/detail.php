@@ -81,6 +81,15 @@ $internet = $db->prepare('SELECT * FROM klant_internet WHERE klant_id = ?');
 $internet->execute([$id]);
 $internet = $internet->fetch() ?: null;
 
+// Virusscanner
+try {
+    $virusscanner = $db->prepare('SELECT * FROM klant_virusscanner WHERE klant_id = ?');
+    $virusscanner->execute([$id]);
+    $virusscanner = $virusscanner->fetch() ?: null;
+} catch (PDOException $e) {
+    $virusscanner = null; // tabel nog niet gemigreerd
+}
+
 $actieve_tab = $_GET['tab'] ?? 'overzicht';
 
 require_once __DIR__ . '/../includes/header.php';
@@ -185,6 +194,13 @@ require_once __DIR__ . '/../includes/header.php';
         <a class="nav-link <?= $actieve_tab === 'internet' ? 'active' : '' ?>" href="?id=<?= $id ?>&tab=internet">
             <i class="ri-wifi-line"></i> Internet
             <?php if ($internet): ?><span class="badge bg-success ms-1" style="font-size:10px;">&#10003;</span><?php endif; ?>
+        </a>
+    </li>
+    <li class="nav-item">
+        <?php $heeft_vs = $virusscanner && ($virusscanner['scanner'] ?? 'geen') !== 'geen'; ?>
+        <a class="nav-link <?= $actieve_tab === 'virusscanner' ? 'active' : '' ?>" href="?id=<?= $id ?>&tab=virusscanner">
+            <i class="ri-shield-check-line"></i> Virusscanner
+            <?php if ($heeft_vs): ?><span class="badge bg-success ms-1" style="font-size:10px;">&#10003;</span><?php endif; ?>
         </a>
     </li>
 </ul>
@@ -1643,6 +1659,178 @@ $iconen = ['pdf' => 'ri-file-pdf-line', 'docx' => 'ri-file-word-line', 'doc' => 
         </div>
     </div>
 </div>
+
+<!-- ─── Tab: Virusscanner ─────────────────────────────────────────────────── -->
+<?php elseif ($actieve_tab === 'virusscanner'):
+    $vs_scanner    = $virusscanner['scanner'] ?? 'geen';
+    $vs_anders     = $virusscanner['scanner_anders'] ?? '';
+    $vs_licentie   = $virusscanner['licentie_encrypted'] ? decrypt_wachtwoord($virusscanner['licentie_encrypted']) : '';
+    $vs_uninstall  = $virusscanner['uninstall_code_encrypted'] ? decrypt_wachtwoord($virusscanner['uninstall_code_encrypted']) : '';
+    $vs_vervaldat  = $virusscanner['vervaldatum'] ?? '';
+    $vs_notities   = $virusscanner['notities'] ?? '';
+    $vs_labels = ['geen' => 'Geen', 'kaspersky' => 'Kaspersky', 'bitdefender' => 'Bitdefender', 'anders' => 'Anders'];
+?>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h6 class="fw-bold mb-0"><i class="ri-shield-check-line me-1"></i> Virusscanner</h6>
+    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalVirusscanner">
+        <?= $virusscanner ? '<i class="ri-edit-line"></i> Bewerken' : '+ Instellen' ?>
+    </button>
+</div>
+<?php if (!$virusscanner || $vs_scanner === 'geen'): ?>
+    <div class="bg-white rounded-3 border p-4 text-center text-muted">Nog geen virusscanner ingesteld.</div>
+<?php else: ?>
+<div class="bg-white rounded-3 border p-4" style="max-width:640px;">
+    <table class="table table-sm table-borderless mb-0">
+        <tr>
+            <td class="text-muted" style="width:40%">Scanner</td>
+            <td>
+                <?php if ($vs_scanner === 'kaspersky'): ?>
+                    <span class="badge" style="background:#00A88E;color:white;font-size:12px;padding:6px 10px;">
+                        <i class="ri-shield-check-line"></i> Kaspersky
+                    </span>
+                <?php elseif ($vs_scanner === 'bitdefender'): ?>
+                    <span class="badge" style="background:#B50202;color:white;font-size:12px;padding:6px 10px;">
+                        <i class="ri-shield-check-line"></i> Bitdefender
+                    </span>
+                <?php elseif ($vs_scanner === 'anders'): ?>
+                    <span class="badge bg-secondary" style="font-size:12px;padding:6px 10px;"><?= h($vs_anders ?: 'Anders') ?></span>
+                <?php endif; ?>
+            </td>
+        </tr>
+        <?php if ($vs_licentie !== ''): ?>
+        <tr>
+            <td class="text-muted">Licentiesleutel</td>
+            <td>
+                <div class="d-flex align-items-center gap-2">
+                    <code id="vs_lic_weergave" style="font-family:ui-monospace,monospace;">••••••••••••••••</code>
+                    <button type="button" class="btn btn-sm btn-link p-0" onclick="toonVsGeheim('vs_lic_weergave', <?= htmlspecialchars(json_encode($vs_licentie), ENT_QUOTES) ?>, this)" title="Tonen">
+                        <i class="ri-eye-line"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-link p-0" onclick="kopieer(<?= htmlspecialchars(json_encode($vs_licentie), ENT_QUOTES) ?>, this)" title="Kopieer">
+                        <i class="ri-file-copy-line"></i>
+                    </button>
+                </div>
+            </td>
+        </tr>
+        <?php endif; ?>
+        <?php if ($vs_scanner === 'bitdefender' && $vs_uninstall !== ''): ?>
+        <tr>
+            <td class="text-muted">Uninstall code</td>
+            <td>
+                <div class="d-flex align-items-center gap-2">
+                    <code id="vs_unc_weergave" style="font-family:ui-monospace,monospace;">••••••••••••</code>
+                    <button type="button" class="btn btn-sm btn-link p-0" onclick="toonVsGeheim('vs_unc_weergave', <?= htmlspecialchars(json_encode($vs_uninstall), ENT_QUOTES) ?>, this)" title="Tonen">
+                        <i class="ri-eye-line"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-link p-0" onclick="kopieer(<?= htmlspecialchars(json_encode($vs_uninstall), ENT_QUOTES) ?>, this)" title="Kopieer">
+                        <i class="ri-file-copy-line"></i>
+                    </button>
+                </div>
+            </td>
+        </tr>
+        <?php endif; ?>
+        <?php if ($vs_vervaldat): ?>
+        <tr>
+            <td class="text-muted">Vervaldatum</td>
+            <td>
+                <?= h(date('d-m-Y', strtotime($vs_vervaldat))) ?>
+                <?php
+                $dagen = (int) floor((strtotime($vs_vervaldat) - time()) / 86400);
+                if ($dagen < 0)       echo ' <span class="badge bg-danger ms-1">verlopen</span>';
+                elseif ($dagen < 30)  echo ' <span class="badge bg-warning text-dark ms-1">' . $dagen . ' dagen</span>';
+                else                  echo ' <span class="badge bg-success ms-1">' . $dagen . ' dagen</span>';
+                ?>
+            </td>
+        </tr>
+        <?php endif; ?>
+        <?php if ($vs_notities !== ''): ?>
+        <tr>
+            <td class="text-muted align-top">Notities</td>
+            <td style="white-space:pre-line;"><?= h($vs_notities) ?></td>
+        </tr>
+        <?php endif; ?>
+    </table>
+</div>
+<?php endif; ?>
+
+<!-- Modal Virusscanner -->
+<div class="modal fade" id="modalVirusscanner" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content rounded-3 border-0 shadow">
+            <div class="modal-header border-0 pb-0 px-4 pt-4">
+                <h5 class="modal-title fw-bold">Virusscanner instellen</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form method="post" action="<?= $base ?>/virusscanner/opslaan.php">
+                    <?= csrf_field() ?>
+                    <input type="hidden" name="klant_id" value="<?= $id ?>">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label fw-medium">Scanner</label>
+                            <select name="scanner" id="vs_scanner_select" class="form-select rounded-3" onchange="vsToonVelden()">
+                                <?php foreach ($vs_labels as $k => $lbl): ?>
+                                    <option value="<?= $k ?>" <?= $vs_scanner === $k ? 'selected' : '' ?>><?= h($lbl) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="col-12" id="vs_anders_veld" style="display:<?= $vs_scanner === 'anders' ? 'block' : 'none' ?>;">
+                            <label class="form-label fw-medium">Naam scanner</label>
+                            <input type="text" name="scanner_anders" class="form-control rounded-3"
+                                   value="<?= h($vs_anders) ?>" placeholder="bv. ESET, Norton, ...">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-medium">Licentiesleutel <span class="text-muted fw-normal">(leeg = niet wijzigen)</span></label>
+                            <input type="text" name="licentie" class="form-control rounded-3"
+                                   placeholder="<?= $vs_licentie !== '' ? 'Bestaand — laat leeg om te behouden' : '' ?>"
+                                   autocomplete="off">
+                        </div>
+                        <div class="col-12" id="vs_uninstall_veld" style="display:<?= $vs_scanner === 'bitdefender' ? 'block' : 'none' ?>;">
+                            <label class="form-label fw-medium">Bitdefender uninstall code <span class="text-muted fw-normal">(leeg = niet wijzigen)</span></label>
+                            <input type="text" name="uninstall_code" class="form-control rounded-3"
+                                   placeholder="<?= $vs_uninstall !== '' ? 'Bestaand — laat leeg om te behouden' : '' ?>"
+                                   autocomplete="off">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-medium">Vervaldatum</label>
+                            <input type="date" name="vervaldatum" class="form-control rounded-3"
+                                   value="<?= h($vs_vervaldat) ?>">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-medium">Notities</label>
+                            <textarea name="notities" class="form-control rounded-3" rows="3"
+                                      placeholder="Extra info..."><?= h($vs_notities) ?></textarea>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="button" class="btn btn-outline-secondary flex-grow-1 rounded-3" data-bs-dismiss="modal">Annuleren</button>
+                        <button type="submit" class="btn btn-primary flex-grow-1 rounded-3">Opslaan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function vsToonVelden() {
+    var sel = document.getElementById('vs_scanner_select');
+    document.getElementById('vs_anders_veld').style.display   = sel.value === 'anders' ? 'block' : 'none';
+    document.getElementById('vs_uninstall_veld').style.display = sel.value === 'bitdefender' ? 'block' : 'none';
+}
+function toonVsGeheim(id, waarde, btn) {
+    var el = document.getElementById(id);
+    if (el.dataset.zichtbaar === '1') {
+        el.textContent = id === 'vs_lic_weergave' ? '••••••••••••••••' : '••••••••••••';
+        el.dataset.zichtbaar = '0';
+        btn.querySelector('i').className = 'ri-eye-line';
+    } else {
+        el.textContent = waarde;
+        el.dataset.zichtbaar = '1';
+        btn.querySelector('i').className = 'ri-eye-off-line';
+    }
+}
+</script>
 
 <?php endif; ?>
 
