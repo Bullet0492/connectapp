@@ -171,6 +171,16 @@ $base = basis_url();
                 Domein check
             </a>
         </li>
+        <li style="padding: 10px 12px 2px; pointer-events:none;">
+            <span style="font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:#adb5bd;">Externe apps</span>
+        </li>
+        <li>
+            <a href="https://www.connect4it.nl/werkbon" target="_blank" rel="noopener">
+                <i class="ri-file-list-3-line" style="font-size:17px;"></i>
+                Werkbon
+                <i class="ri-external-link-line ms-auto" style="font-size:13px;color:#adb5bd;"></i>
+            </a>
+        </li>
         <?php if ($gebruiker['rol'] === 'admin'): ?>
         <li style="padding: 10px 12px 2px; pointer-events:none;">
             <span style="font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:#adb5bd;">Beheer</span>
