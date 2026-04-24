@@ -308,11 +308,11 @@ function klant_pagina_url(int $p): string {
                             <input type="text" name="beheerder_anders" id="beheerder_anders_input" class="form-control rounded-3" value="<?= $is_anders ? h($bewerken_klant['beheerder'] ?? '') : '' ?>" placeholder="Naam beheerder...">
                         </div>
                         <div class="col-12 col-md-6">
-                            <label class="form-label fw-medium">DrayTek ACS Network ID</label>
+                            <label class="form-label fw-medium">DrayTek ACS Device ID</label>
                             <input type="text" name="acs_network_id" class="form-control rounded-3"
-                                   placeholder="bv. 3199"
+                                   placeholder="bv. 9577"
                                    value="<?= $bewerken_klant ? h($bewerken_klant['acs_network_id'] ?? '') : '' ?>">
-                            <div class="form-text small">Getal uit de URL in VigorACS: /network/&lt;id&gt;/dashboard</div>
+                            <div class="form-text small">Getal uit de URL in VigorACS: /device/&lt;id&gt;/device-dashboard</div>
                         </div>
                         <div class="col-12 col-md-6">
                             <label class="form-label fw-medium">DrayTek device-naam</label>

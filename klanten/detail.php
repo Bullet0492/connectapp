@@ -112,7 +112,7 @@ require_once __DIR__ . '/../includes/header.php';
     </div>
     <div class="d-flex gap-2">
         <?php if (!empty($klant['acs_network_id'])): ?>
-            <a href="https://cloudx1.draytek.nl/web/nms/#/network/<?= h($klant['acs_network_id']) ?>/dashboard"
+            <a href="https://cloudx1.draytek.nl/web/nms/#/device/<?= h($klant['acs_network_id']) ?>/device-dashboard"
                target="_blank" rel="noopener"
                class="btn btn-outline-danger btn-sm"
                title="Open in DrayTek VigorACS">
@@ -2367,11 +2367,11 @@ function kopieerSbxWw(klant_id, btn) {
                             <input type="text" name="beheerder_anders" class="form-control rounded-3" value="<?= $is_anders_bk ? h($huidig_beheerder) : '' ?>">
                         </div>
                         <div class="col-12 col-md-6">
-                            <label class="form-label fw-medium">DrayTek ACS Network ID</label>
+                            <label class="form-label fw-medium">DrayTek ACS Device ID</label>
                             <input type="text" name="acs_network_id" class="form-control rounded-3"
-                                   placeholder="bv. 3199"
+                                   placeholder="bv. 9577"
                                    value="<?= h($klant['acs_network_id'] ?? '') ?>">
-                            <div class="form-text small">Getal uit de URL in VigorACS: /network/&lt;id&gt;/dashboard</div>
+                            <div class="form-text small">Getal uit de URL in VigorACS: /device/&lt;id&gt;/device-dashboard</div>
                         </div>
                         <div class="col-12 col-md-6">
                             <label class="form-label fw-medium">DrayTek device-naam</label>
