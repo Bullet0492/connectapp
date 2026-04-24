@@ -24,6 +24,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     $bewerken_id = (int)($_POST['bewerken_id'] ?? 0);
 
+    // Intranet ID is verplicht bij aanmaken (niet bij bewerken, want oude klanten kunnen leeg zijn)
+    if (!$bewerken_id && $data['intranet_id'] === '') {
+        flash_set('fout', 'Intranet ID is verplicht bij het aanmaken van een nieuwe klant.');
+        header('Location: index.php');
+        exit;
+    }
+
     if ($data['naam'] !== '') {
         if ($bewerken_id) {
             $db->prepare("UPDATE klanten SET naam=:naam, bedrijf=:bedrijf, adres=:adres, postcode=:postcode,
@@ -72,6 +79,10 @@ if ($bewerken_id) {
     $s->execute([$bewerken_id]);
     $bewerken_klant = $s->fetch();
 }
+
+// Volgend intranet-ID: min 3000, anders hoogste bestaande + 1
+$max_intranet = (int)$db->query("SELECT COALESCE(MAX(CAST(intranet_id AS UNSIGNED)), 0) FROM klanten")->fetchColumn();
+$volgende_intranet_id = max(3000, $max_intranet + 1);
 
 function klant_pagina_url(int $p): string {
     global $zoek;
@@ -265,9 +276,16 @@ function klant_pagina_url(int $p): string {
                                    value="<?= $bewerken_klant ? h($bewerken_klant['intra_id'] ?? '') : '' ?>">
                         </div>
                         <div class="col-12 col-md-6">
-                            <label class="form-label fw-medium">Intranet ID</label>
-                            <input type="text" name="intranet_id" class="form-control rounded-3" placeholder="Intranet ID"
-                                   value="<?= $bewerken_klant ? h($bewerken_klant['intranet_id'] ?? '') : '' ?>">
+                            <label class="form-label fw-medium">Intranet ID <span class="text-danger" id="intranet_id_required_star"<?= $bewerken_klant ? ' style="display:none;"' : '' ?>>*</span></label>
+                            <input type="text" name="intranet_id" id="klant_intranet_id" class="form-control rounded-3"
+                                   placeholder="Intranet ID"
+                                   data-volgende="<?= h((string)$volgende_intranet_id) ?>"
+                                   value="<?= $bewerken_klant ? h($bewerken_klant['intranet_id'] ?? '') : h((string)$volgende_intranet_id) ?>"
+                                   <?= $bewerken_klant ? '' : 'required' ?>>
+                            <div class="form-text small">
+                                <?= $bewerken_klant ? 'Aanpasbaar voor oude klanten.' : 'Volgende vrije nummer. Mag je overschrijven voor oude klanten.' ?>
+                            </div>
+                            <div class="invalid-feedback">Intranet ID is verplicht.</div>
                         </div>
                         <div class="col-12 col-md-6">
                             <label class="form-label fw-medium">Beheerder</label>
@@ -350,6 +368,13 @@ document.getElementById('btn-nieuwe-klant').addEventListener('click', function()
         var el = form.querySelector('[name="' + f + '"]');
         if (el) el.value = '';
     });
+    // Intranet ID: vul met volgende vrije nummer en maak verplicht
+    var intra = document.getElementById('klant_intranet_id');
+    if (intra) {
+        intra.value = intra.dataset.volgende || '';
+        intra.setAttribute('required', 'required');
+        document.getElementById('intranet_id_required_star').style.display = '';
+    }
     document.getElementById('beheerder_anders_veld').style.display = 'none';
     form.classList.remove('was-validated');
 });
