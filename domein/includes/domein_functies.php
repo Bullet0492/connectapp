@@ -147,19 +147,45 @@ function domein_vps_panel_url(string $host): string {
 
 /**
  * Kijkt of een gegeven IP-lijst overeenkomt met een van onze VPS-servers.
- * Retourneert een array met matches: [ ['vps_host' => ..., 'panel_url' => ..., 'ip' => ...], ... ]
+ *
+ * Match op twee manieren, omdat een VPS vaak meerdere IPs heeft waarvan
+ * alleen de hoofd-IP forward-DNS krijgt:
+ *   1. Directe forward-match (vpsN.connect4it.hix.nl → IP == onze IP)
+ *   2. Reverse-DNS-match (PTR van onze IP == vpsN.connect4it.hix.nl)
+ *
+ * Retourneert: [ ['vps_host' => ..., 'panel_url' => ..., 'ip' => ..., 'via' => ...], ... ]
  */
 function domein_vps_matches_voor_ips(array $ips): array {
     $map = domein_vps_ip_map();
     $matches = [];
+    $gezien  = [];
+
     foreach (array_unique($ips) as $ip) {
+        $host = null;
+        $via  = null;
+
         if (isset($map[$ip])) {
-            $matches[] = [
-                'ip'        => $ip,
-                'vps_host'  => $map[$ip],
-                'panel_url' => domein_vps_panel_url($map[$ip]),
-            ];
+            $host = $map[$ip];
+            $via  = 'A';
+        } else {
+            $ptr = domein_reverse_dns($ip);
+            if ($ptr && preg_match('/^vps[1-9]\d?\.connect4it\.hix\.nl\.?$/i', $ptr)) {
+                $host = rtrim(strtolower($ptr), '.');
+                $via  = 'PTR';
+            }
         }
+
+        if (!$host) continue;
+        $key = $host . '|' . $ip;
+        if (isset($gezien[$key])) continue;
+        $gezien[$key] = true;
+
+        $matches[] = [
+            'ip'        => $ip,
+            'vps_host'  => $host,
+            'panel_url' => domein_vps_panel_url($host),
+            'via'       => $via,
+        ];
     }
     return $matches;
 }
