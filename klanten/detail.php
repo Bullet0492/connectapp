@@ -2367,6 +2367,20 @@ function kopieerSbxWw(klant_id, btn) {
                             <input type="text" name="beheerder_anders" class="form-control rounded-3" value="<?= $is_anders_bk ? h($huidig_beheerder) : '' ?>">
                         </div>
                         <div class="col-12 col-md-6">
+                            <label class="form-label fw-medium">DrayTek ACS Network ID</label>
+                            <input type="text" name="acs_network_id" class="form-control rounded-3"
+                                   placeholder="bv. 3199"
+                                   value="<?= h($klant['acs_network_id'] ?? '') ?>">
+                            <div class="form-text small">Getal uit de URL in VigorACS: /network/&lt;id&gt;/dashboard</div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-medium">DrayTek device-naam</label>
+                            <input type="text" name="acs_device_naam" class="form-control rounded-3"
+                                   placeholder="bv. 2120Fn_Finance Beheer"
+                                   value="<?= h($klant['acs_device_naam'] ?? '') ?>">
+                            <div class="form-text small">Exacte naam zoals in VigorACS (optioneel).</div>
+                        </div>
+                        <div class="col-12 col-md-6">
                             <label class="form-label fw-medium">VPS</label>
                             <select name="vps" class="form-select rounded-3">
                                 <option value="">— Geen VPS —</option>
