@@ -25,6 +25,7 @@ $dns = $whois = $ssl = $spf = $dmarc = $dkim = $vps_treffers = null;
 $alle_ips = [];
 $mail_banners = [];
 $blacklist = [];
+$aanbevelingen = [];
 
 if ($domein) {
     @set_time_limit(60);
@@ -77,6 +78,9 @@ if ($domein) {
     foreach ($blacklist_ips as $ip) {
         $blacklist[$ip] = domein_blacklist_voor_ip($ip);
     }
+
+    // 8. Analyse / aanbevelingen
+    $aanbevelingen = domein_aanbevelingen($domein, $dns, $ssl, $spf, $dmarc, $dkim, $blacklist, $mail_banners);
 
     // Historie + logboek
     try {
@@ -195,6 +199,50 @@ function domein_render_txt(string $tekst): string {
         <?php endforeach; ?>
         </div>
         <div class="text-muted small mt-2">Klik om het DirectAdmin-paneel op poort 2222 te openen.</div>
+    </div>
+</div>
+<?php endif; ?>
+
+<?php if ($aanbevelingen):
+    // Sorteer: fout, warn, ok
+    $volgorde = ['fout' => 0, 'warn' => 1, 'ok' => 2];
+    usort($aanbevelingen, fn($a, $b) => $volgorde[$a[0]] <=> $volgorde[$b[0]]);
+    $cnt = ['fout' => 0, 'warn' => 0, 'ok' => 0];
+    foreach ($aanbevelingen as $x) $cnt[$x[0]]++;
+?>
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-body p-4">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+            <h5 class="fw-bold mb-0"><i class="ri-clipboard-line me-1"></i> Analyse &amp; aanbevelingen</h5>
+            <div class="d-flex gap-2">
+                <?php if ($cnt['fout']): ?><span class="badge bg-danger"><?= $cnt['fout'] ?> fout</span><?php endif; ?>
+                <?php if ($cnt['warn']): ?><span class="badge bg-warning text-dark"><?= $cnt['warn'] ?> aandacht</span><?php endif; ?>
+                <?php if ($cnt['ok']):   ?><span class="badge bg-success"><?= $cnt['ok'] ?> ok</span><?php endif; ?>
+            </div>
+        </div>
+        <div class="list-group list-group-flush">
+            <?php foreach ($aanbevelingen as [$status, $titel, $tekst, $hoe]):
+                $kleur = $status === 'fout' ? 'danger' : ($status === 'warn' ? 'warning' : 'success');
+                $icoon = $status === 'fout' ? 'ri-close-circle-fill' : ($status === 'warn' ? 'ri-error-warning-fill' : 'ri-checkbox-circle-fill');
+            ?>
+            <div class="list-group-item px-0 py-2 border-0 border-bottom">
+                <div class="d-flex align-items-start gap-3">
+                    <i class="<?= $icoon ?> text-<?= $kleur ?>" style="font-size:20px;flex-shrink:0;margin-top:1px;"></i>
+                    <div class="flex-grow-1">
+                        <div class="fw-semibold"><?= h($titel) ?></div>
+                        <?php if ($tekst): ?>
+                            <div class="small text-muted mt-1" style="white-space:pre-line;"><?= h($tekst) ?></div>
+                        <?php endif; ?>
+                        <?php if (!empty($hoe)): ?>
+                            <div class="small mt-1" style="color:#0d5f3d;">
+                                <i class="ri-tools-line me-1"></i><strong>Advies:</strong> <?= h($hoe) ?>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+            <?php endforeach; ?>
+        </div>
     </div>
 </div>
 <?php endif; ?>

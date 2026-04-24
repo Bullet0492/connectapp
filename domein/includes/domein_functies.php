@@ -226,9 +226,7 @@ function domein_whois_query(string $server, string $query, int $timeout = 6): ?s
     $fp = @fsockopen($server, 43, $errno, $errstr, $timeout);
     if (!$fp) return null;
     stream_set_timeout($fp, $timeout);
-    // SIDN wil "domein ascii" om utf-8 output te krijgen
-    $suffix = (stripos($server, 'sidn.nl') !== false) ? " -C US-ASCII\r\n" : "\r\n";
-    fwrite($fp, $query . $suffix);
+    fwrite($fp, $query . "\r\n");
     $data = '';
     while (!feof($fp)) {
         $data .= fread($fp, 8192);
@@ -401,6 +399,202 @@ function domein_mail_banner(string $host, int $timeout = 4): ?string {
     @fwrite($fp, "QUIT\r\n");
     fclose($fp);
     return $banner ? trim($banner) : null;
+}
+
+// ─── Aanbevelingen / analyse ─────────────────────────────────────────────────
+
+/**
+ * Analyseert de verzamelde data en geeft concrete aanbevelingen terug.
+ * Elke bevinding: ['status' => 'ok'|'warn'|'fout', 'titel' => ..., 'tekst' => ..., 'hoe' => ...]
+ *   - status: severity
+ *   - titel : korte samenvatting (wat is er aan de hand)
+ *   - tekst : toelichting
+ *   - hoe   : concrete actie om het te verbeteren (optioneel)
+ */
+function domein_aanbevelingen(
+    string $domein,
+    array $dns,
+    ?array $ssl,
+    array $spf,
+    ?array $dmarc,
+    array $dkim,
+    array $blacklist,
+    array $mail_banners
+): array {
+    $b = [];
+
+    // ─── SPF ────────────────────────────────────────
+    if (!$spf['aanwezig']) {
+        $b[] = ['fout', 'Geen SPF record',
+            'Zonder SPF kan iedereen zogenaamd namens dit domein mailen. Ontvangende mailservers weten niet welke IPs geautoriseerd zijn.',
+            'Voeg een TXT-record toe op ' . $domein . ' met: v=spf1 include:_spf.jouwprovider.nl -all'];
+    } else {
+        $raw = $spf['raw'];
+        if (preg_match('/(^|\s)\+all(\s|$)/i', $raw)) {
+            $b[] = ['fout', 'SPF staat +all toe', 'Dit laat iedereen namens het domein mailen — dat maakt SPF nutteloos.',
+                'Vervang +all door -all (strikt) of ~all (soft fail).'];
+        } elseif (preg_match('/(^|\s)~all(\s|$)/i', $raw)) {
+            $b[] = ['warn', 'SPF eindigt op ~all (soft fail)',
+                'Mail die niet matcht wordt door ontvangers doorgaans alsnog geaccepteerd (markering als spam).',
+                'Overweeg -all zodra je zeker weet dat alle legitieme verzenders in de SPF staan.'];
+        } elseif (preg_match('/(^|\s)-all(\s|$)/i', $raw)) {
+            $b[] = ['ok', 'SPF strikt ingesteld (-all)', '', ''];
+        } else {
+            $b[] = ['warn', 'SPF heeft geen eind-mechanisme',
+                'Zonder ±all / -all weet de ontvanger niet wat te doen met niet-matchende mail.',
+                'Voeg -all (of tijdelijk ~all) toe aan het einde van de SPF.'];
+        }
+        $lookups = preg_match_all('/\b(include|a|mx|exists|redirect|ptr)[:=]/i', $raw);
+        if ($lookups > 10) {
+            $b[] = ['fout', 'SPF overschrijdt limiet van 10 DNS-lookups',
+                'RFC 7208 staat maximaal 10 include/a/mx/exists/redirect/ptr toe. Ontvangers mogen de SPF dan negeren.',
+                'Consolideer includes of gebruik een flattening-tool.'];
+        }
+    }
+
+    // ─── DMARC ──────────────────────────────────────
+    if (!$dmarc) {
+        $b[] = ['fout', 'Geen DMARC record',
+            'Zonder DMARC is er geen afwijs-beleid voor mail die SPF/DKIM faalt, en geen rapportage over misbruik.',
+            'Voeg TXT-record toe op _dmarc.' . $domein . ': v=DMARC1; p=quarantine; rua=mailto:postmaster@' . $domein . '; adkim=s; aspf=s'];
+    } else {
+        $p = strtolower($dmarc['pairs']['p'] ?? 'none');
+        if ($p === 'none') {
+            $b[] = ['warn', 'DMARC policy is p=none (monitoring-only)',
+                'Mail die faalt wordt niet tegengehouden — alleen gerapporteerd.',
+                'Zodra je rapporten (rua) hebt geanalyseerd: zet naar p=quarantine, en daarna p=reject.'];
+        } elseif ($p === 'quarantine') {
+            $b[] = ['ok', 'DMARC p=quarantine', 'Sterke instelling: falende mail gaat naar spam.', 'Overweeg upgrade naar p=reject voor maximale bescherming.'];
+        } elseif ($p === 'reject') {
+            $b[] = ['ok', 'DMARC p=reject', 'Strengste DMARC-instelling.', ''];
+        }
+        if (empty($dmarc['pairs']['rua'])) {
+            $b[] = ['warn', 'DMARC zonder rua (rapportage-adres)',
+                'Je krijgt geen dagelijkse aggregate rapporten van ontvangers over wie er namens jou mailt.',
+                'Voeg rua=mailto:postmaster@' . $domein . ' toe aan het DMARC record.'];
+        }
+        $pct = (int)($dmarc['pairs']['pct'] ?? 100);
+        if ($pct < 100 && $p !== 'none') {
+            $b[] = ['warn', 'DMARC pct=' . $pct . ' — slechts deel van mail wordt gefilterd',
+                'Alleen ' . $pct . '% van falende mail valt onder de policy.',
+                'Zet naar pct=100 zodra de rapporten schoon zijn.'];
+        }
+    }
+
+    // ─── DKIM ───────────────────────────────────────
+    if (!$dkim) {
+        $b[] = ['warn', 'Geen DKIM selector gevonden',
+            'We probeerden ' . count(DOMEIN_DKIM_SELECTOREN) . ' veelvoorkomende selector-namen. DKIM kan alsnog ingesteld zijn met een custom selector.',
+            'Vraag de mailprovider naar de gebruikte selector en verifieer via <selector>._domainkey.' . $domein . '.'];
+    } else {
+        $b[] = ['ok', count($dkim) . ' DKIM selector(s) gevonden', '', ''];
+    }
+
+    // ─── MX ─────────────────────────────────────────
+    $mx = $dns['MX'] ?? [];
+    if (!$mx) {
+        $b[] = ['warn', 'Geen MX records',
+            'Zonder MX kan dit domein geen mail ontvangen. Als het domein puur voor websites is, is dit prima.',
+            'Voeg MX records toe als e-mail gewenst is.'];
+    } elseif (count($mx) === 1) {
+        $b[] = ['warn', 'Slechts 1 MX record',
+            'Eén MX host betekent geen redundantie: bij uitval gaat mail kwijt of bounced.',
+            'Voeg een tweede MX met hogere priority toe (backup MX).'];
+    } else {
+        $b[] = ['ok', count($mx) . ' MX records (redundant)', '', ''];
+    }
+
+    // MX PTR mismatch
+    foreach ($mail_banners as $mb) {
+        $host = strtolower(rtrim($mb['host'] ?? '', '.'));
+        if (!$host) continue;
+        $a = @dns_get_record($host, DNS_A);
+        if (!$a) continue;
+        foreach ($a as $rec) {
+            $ip = $rec['ip'] ?? null;
+            if (!$ip) continue;
+            $ptr = domein_reverse_dns($ip);
+            if ($ptr && strtolower(rtrim($ptr, '.')) !== $host) {
+                $b[] = ['warn', 'MX PTR wijkt af van hostname',
+                    $host . ' ' . $ip . ' → PTR wijst naar ' . $ptr . '. Sommige ontvangers (zoals Microsoft) eisen matchend PTR.',
+                    'Laat de hosting-provider de reverse-DNS gelijk zetten aan ' . $host . '.'];
+                break 2;
+            }
+        }
+    }
+
+    // ─── SSL ────────────────────────────────────────
+    if (!$ssl) {
+        $b[] = ['warn', 'Geen SSL op poort 443',
+            'Dit domein is niet bereikbaar via HTTPS.',
+            'Installeer een (Let\'s Encrypt) certificaat via DirectAdmin of de hosting-provider.'];
+    } else {
+        if ($ssl['geldig_tot']) {
+            $dagen = (int) floor(($ssl['geldig_tot'] - time()) / 86400);
+            if ($dagen < 0) {
+                $b[] = ['fout', 'SSL certificaat verlopen (' . abs($dagen) . ' dagen geleden)',
+                    'Bezoekers krijgen waarschuwingen in de browser.',
+                    'Vernieuw direct via DirectAdmin → SSL Certificates → Let\'s Encrypt.'];
+            } elseif ($dagen < 14) {
+                $b[] = ['fout', 'SSL verloopt binnen ' . $dagen . ' dagen',
+                    'Auto-renew heeft niet gewerkt.',
+                    'Controleer in DirectAdmin of de Let\'s Encrypt cron nog draait en hernieuw handmatig.'];
+            } elseif ($dagen < 30) {
+                $b[] = ['warn', 'SSL verloopt binnen ' . $dagen . ' dagen', '',
+                    'Controleer of auto-renewal ingeschakeld staat.'];
+            } else {
+                $b[] = ['ok', 'SSL geldig (' . $dagen . ' dagen)', '', ''];
+            }
+        }
+        // Subject/SAN match?
+        $cn = strtolower($ssl['subject_cn'] ?? '');
+        $sans = array_map('strtolower', $ssl['sans']);
+        $match = ($cn === $domein) || in_array($domein, $sans, true) || in_array('*.' . implode('.', array_slice(explode('.', $domein), 1)), $sans, true);
+        if (!$match && $sans) {
+            $b[] = ['warn', 'SSL certificaat dekt dit domein niet',
+                'CN/SAN matcht niet met ' . $domein . '. Browsers tonen een foutmelding.',
+                'Vernieuw het certificaat met correcte SAN (bijv. ' . $domein . ' en www.' . $domein . ').'];
+        }
+    }
+
+    // ─── CAA ────────────────────────────────────────
+    if (empty($dns['CAA'])) {
+        $b[] = ['warn', 'Geen CAA records',
+            'CAA beperkt welke certificaat-autoriteiten certificaten voor dit domein mogen uitgeven. Extra beveiliging tegen mis-issuance.',
+            'Voeg TXT/CAA-record toe: 0 issue "letsencrypt.org" (en eventueel 0 issuewild "letsencrypt.org").'];
+    } else {
+        $b[] = ['ok', 'CAA records aanwezig', '', ''];
+    }
+
+    // ─── DNSSEC ─────────────────────────────────────
+    // dns_get_record geeft geen DS/RRSIG. We kunnen alleen via whois zien of DNSSEC actief is — dat wordt elders getoond.
+
+    // ─── NS redundantie ─────────────────────────────
+    $ns = $dns['NS'] ?? [];
+    if (count($ns) < 2) {
+        $b[] = ['warn', 'Minder dan 2 nameservers',
+            'Best practice (en vereist bij .nl) is minimaal 2 nameservers voor redundantie.',
+            'Voeg een tweede NS toe bij de registrar.'];
+    } else {
+        $b[] = ['ok', count($ns) . ' nameservers (redundant)', '', ''];
+    }
+
+    // ─── Blacklist ──────────────────────────────────
+    $gelist = [];
+    foreach ($blacklist as $ip => $checks) {
+        foreach ($checks as $c) {
+            if ($c['gelist']) $gelist[] = $ip . ' staat op ' . $c['rbl'] . ($c['reden'] ? ' (' . $c['reden'] . ')' : '');
+        }
+    }
+    if ($gelist) {
+        $b[] = ['fout', count($gelist) . ' blacklist-vermelding(en)',
+            implode("\n", $gelist),
+            'Controleer op uitgaande spam/compromitteringen en vraag delisting aan via de website van de betreffende RBL.'];
+    } elseif ($blacklist) {
+        $b[] = ['ok', 'Niet op onderzochte blacklists', '', ''];
+    }
+
+    return $b;
 }
 
 // ─── TXT helper ──────────────────────────────────────────────────────────────
