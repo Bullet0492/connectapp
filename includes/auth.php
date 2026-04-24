@@ -9,10 +9,13 @@ function sessie_start(): void {
             ini_set('session.cookie_secure',   '1'); // Alleen via HTTPS
         }
         ini_set('session.cookie_httponly', '1'); // Niet toegankelijk via JavaScript
-        ini_set('session.cookie_samesite', 'Strict');
+        ini_set('session.cookie_samesite', 'Lax');  // Lax: toestaan bij top-level nav (nodig voor SSO vanaf andere tab)
         ini_set('session.use_strict_mode', '1');
         ini_set('session.gc_maxlifetime',  '7200'); // 2 uur
         ini_set('session.cookie_lifetime', '7200'); // Cookie overleeft browser-restart
+        // Eigen cookie-naam + path zodat connectapp en werkbon elkaar niet overschrijven
+        session_name('CONNECTAPP_SESSID');
+        ini_set('session.cookie_path', '/app');
         // Eigen save_path zodat Debian's systeem-cron de sessies niet na 24 min opruimt
         $eigen_sessie_pad = __DIR__ . '/../tmp/sessions';
         if (is_dir($eigen_sessie_pad) && is_writable($eigen_sessie_pad)) {
