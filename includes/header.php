@@ -165,6 +165,12 @@ $base = basis_url();
                 Veilig versturen
             </a>
         </li>
+        <li>
+            <a href="<?= $base ?>/domein/index.php" class="<?= strpos($_SERVER['PHP_SELF'], '/domein/') !== false ? 'active' : '' ?>">
+                <i class="ri-global-line" style="font-size:17px;"></i>
+                Domein check
+            </a>
+        </li>
         <?php if ($gebruiker['rol'] === 'admin'): ?>
         <li style="padding: 10px 12px 2px; pointer-events:none;">
             <span style="font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:#adb5bd;">Beheer</span>
