@@ -12,8 +12,10 @@ if (!$klant_id) { header('Location: ' . basis_url() . '/klanten/index.php'); exi
 $heeft_yeastar = isset($_POST['heeft_yeastar']);
 $heeft_simpbx  = isset($_POST['heeft_simpbx']);
 $heeft_ziggo   = isset($_POST['heeft_ziggo']);
+$heeft_routit  = isset($_POST['heeft_routit']);
 $simpbx_naam   = trim($_POST['simpbx_naam'] ?? '');
 $ziggo_naam    = trim($_POST['ziggo_naam'] ?? '');
+$routit_naam   = trim($_POST['routit_naam'] ?? '');
 
 // ─── Yeastar ─────────────────────────────────────────────────────────────────
 if ($heeft_yeastar) {
@@ -62,6 +64,19 @@ if ($heeft_ziggo) {
     }
 } else {
     db()->prepare('UPDATE klant_ziggo SET actief=0 WHERE klant_id=?')->execute([$klant_id]);
+}
+
+// ─── RoutIT ──────────────────────────────────────────────────────────────────
+if ($heeft_routit) {
+    $bestaand = db()->prepare('SELECT id FROM klant_routit WHERE klant_id=?');
+    $bestaand->execute([$klant_id]);
+    if ($bestaand->fetch()) {
+        db()->prepare('UPDATE klant_routit SET actief=1, naam=? WHERE klant_id=?')->execute([$routit_naam ?: null, $klant_id]);
+    } else {
+        db()->prepare('INSERT INTO klant_routit (klant_id, actief, naam) VALUES (?,1,?)')->execute([$klant_id, $routit_naam ?: null]);
+    }
+} else {
+    db()->prepare('UPDATE klant_routit SET actief=0 WHERE klant_id=?')->execute([$klant_id]);
 }
 
 log_actie('telefonie_opgeslagen', 'Klant ID: ' . $klant_id);

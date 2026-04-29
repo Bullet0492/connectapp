@@ -11,8 +11,10 @@ function sessie_start(): void {
         ini_set('session.cookie_httponly', '1'); // Niet toegankelijk via JavaScript
         ini_set('session.cookie_samesite', 'Lax');  // Lax: toestaan bij top-level nav (nodig voor SSO vanaf andere tab)
         ini_set('session.use_strict_mode', '1');
-        ini_set('session.gc_maxlifetime',  '7200'); // 2 uur
-        ini_set('session.cookie_lifetime', '7200'); // Cookie overleeft browser-restart
+        // 30 dagen — server-side handhaaft de echte timeout via $_SESSION['laatste_activiteit'].
+        // Cookie zelf moet lang genoeg leven voor users die "nooit uitloggen" hebben gekozen.
+        ini_set('session.gc_maxlifetime',  '2592000');
+        ini_set('session.cookie_lifetime', '2592000');
         // Eigen cookie-naam + path zodat connectapp en werkbon elkaar niet overschrijven
         session_name('CONNECTAPP_SESSID');
         ini_set('session.cookie_path', '/app');
@@ -31,8 +33,11 @@ function is_ingelogd(): bool {
     sessie_start();
     if (!isset($_SESSION['user_id'])) return false;
 
-    // Sessie-timeout: 2 uur inactiviteit
-    if (isset($_SESSION['laatste_activiteit']) && (time() - $_SESSION['laatste_activiteit']) > 7200) {
+    // Per-user timeout in minuten. 0 = nooit uitloggen. Default 120 (2 uur).
+    $timeout_min = $_SESSION['timeout_minuten'] ?? 120;
+    if ($timeout_min > 0
+        && isset($_SESSION['laatste_activiteit'])
+        && (time() - $_SESSION['laatste_activiteit']) > ($timeout_min * 60)) {
         session_unset();
         session_destroy();
         return false;
@@ -119,15 +124,25 @@ function login(string $login, string $wachtwoord): string {
     }
 
     try {
-        $stmt = db()->prepare('SELECT id, naam, wachtwoord, rol, totp_actief FROM users WHERE email = ? OR gebruikersnaam = ?');
+        $stmt = db()->prepare('SELECT id, naam, wachtwoord, rol, totp_actief, sessie_timeout_minuten FROM users WHERE email = ? OR gebruikersnaam = ?');
         $stmt->execute([$login, $login]);
         $user = $stmt->fetch();
     } catch (PDOException $e) {
-        // totp_actief kolom bestaat nog niet — migrate4.php nog niet uitgevoerd
-        $stmt = db()->prepare('SELECT id, naam, wachtwoord, rol FROM users WHERE email = ? OR gebruikersnaam = ?');
-        $stmt->execute([$login, $login]);
-        $user = $stmt->fetch();
-        if ($user) $user['totp_actief'] = 0;
+        // sessie_timeout_minuten of totp_actief kolom bestaat nog niet — migrate nog niet gedraaid
+        try {
+            $stmt = db()->prepare('SELECT id, naam, wachtwoord, rol, totp_actief FROM users WHERE email = ? OR gebruikersnaam = ?');
+            $stmt->execute([$login, $login]);
+            $user = $stmt->fetch();
+            if ($user) $user['sessie_timeout_minuten'] = 120;
+        } catch (PDOException $e2) {
+            $stmt = db()->prepare('SELECT id, naam, wachtwoord, rol FROM users WHERE email = ? OR gebruikersnaam = ?');
+            $stmt->execute([$login, $login]);
+            $user = $stmt->fetch();
+            if ($user) {
+                $user['totp_actief'] = 0;
+                $user['sessie_timeout_minuten'] = 120;
+            }
+        }
     }
 
     if ($user && password_verify($wachtwoord, $user['wachtwoord'])) {
@@ -149,6 +164,7 @@ function login(string $login, string $wachtwoord): string {
         $_SESSION['user_rol']           = $user['rol'];
         $_SESSION['login_methode']      = 'wachtwoord';
         $_SESSION['laatste_activiteit'] = time();
+        $_SESSION['timeout_minuten']    = (int)($user['sessie_timeout_minuten'] ?? 120);
         db()->prepare('UPDATE users SET laatste_login = NOW() WHERE id = ?')->execute([$user['id']]);
         return 'ok';
     }
@@ -179,9 +195,16 @@ function verifieer_2fa(string $code): string {
         return 'geblokkeerd';
     }
 
-    $stmt = db()->prepare('SELECT id, naam, rol, totp_secret FROM users WHERE id = ?');
-    $stmt->execute([$_SESSION['2fa_user_id']]);
-    $user = $stmt->fetch();
+    try {
+        $stmt = db()->prepare('SELECT id, naam, rol, totp_secret, sessie_timeout_minuten FROM users WHERE id = ?');
+        $stmt->execute([$_SESSION['2fa_user_id']]);
+        $user = $stmt->fetch();
+    } catch (PDOException $e) {
+        $stmt = db()->prepare('SELECT id, naam, rol, totp_secret FROM users WHERE id = ?');
+        $stmt->execute([$_SESSION['2fa_user_id']]);
+        $user = $stmt->fetch();
+        if ($user) $user['sessie_timeout_minuten'] = 120;
+    }
 
     if (!$user || empty($user['totp_secret'])) {
         return 'fout';
@@ -204,6 +227,7 @@ function verifieer_2fa(string $code): string {
     $_SESSION['user_rol']           = $user['rol'];
     $_SESSION['login_methode']      = 'wachtwoord+2fa';
     $_SESSION['laatste_activiteit'] = time();
+    $_SESSION['timeout_minuten']    = (int)($user['sessie_timeout_minuten'] ?? 120);
     db()->prepare('UPDATE users SET laatste_login = NOW() WHERE id = ?')->execute([$user['id']]);
 
     return 'ok';

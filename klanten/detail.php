@@ -76,10 +76,25 @@ $ziggo = $db->prepare('SELECT * FROM klant_ziggo WHERE klant_id = ?');
 $ziggo->execute([$id]);
 $ziggo = $ziggo->fetch() ?: null;
 
+// RoutIT
+try {
+    $routit = $db->prepare('SELECT * FROM klant_routit WHERE klant_id = ?');
+    $routit->execute([$id]);
+    $routit = $routit->fetch() ?: null;
+} catch (PDOException $e) {
+    // Tabel bestaat nog niet — migrate_routit.php nog niet uitgevoerd
+    $routit = null;
+}
+
 // Internet provider
 $internet = $db->prepare('SELECT * FROM klant_internet WHERE klant_id = ?');
 $internet->execute([$id]);
 $internet = $internet->fetch() ?: null;
+
+// WiFi wachtwoorden decrypten (voor weergave + invul-velden in modal). Migrate_wifi nog niet
+// gedraaid? Dan ontbreken de kolommen — vang dat op met null-coalesce.
+$wifi_wachtwoord = ($internet && !empty($internet['wifi_wachtwoord_enc'] ?? null)) ? decrypt_wachtwoord($internet['wifi_wachtwoord_enc']) : '';
+$gast_wachtwoord = ($internet && !empty($internet['gast_wachtwoord_enc'] ?? null)) ? decrypt_wachtwoord($internet['gast_wachtwoord_enc']) : '';
 
 // Virusscanner
 try {
@@ -184,7 +199,7 @@ require_once __DIR__ . '/../includes/header.php';
         </a>
     </li>
     <li class="nav-item">
-        <?php $heeft_telefonie = !empty($yeastar_centralen) || !empty($simpbx['actief']); ?>
+        <?php $heeft_telefonie = !empty($yeastar_centralen) || !empty($simpbx['actief']) || !empty($ziggo['actief']) || !empty($routit['actief']); ?>
         <a class="nav-link <?= $actieve_tab === 'telefonie' ? 'active' : '' ?>" href="?id=<?= $id ?>&tab=telefonie">
             <i class="ri-phone-line"></i> Telefonie
             <?php if ($heeft_telefonie): ?><span class="badge bg-success ms-1" style="font-size:10px;">&#10003;</span><?php endif; ?>
@@ -337,7 +352,7 @@ function beheerder_kleur($naam, $kleuren) {
     <!-- Telefonie -->
     <?php
     $ys_overzicht = !empty($yeastar_centralen) ? $yeastar_centralen[0] : null;
-    $heeft_tel_overzicht = $ys_overzicht || !empty($simpbx['actief']);
+    $heeft_tel_overzicht = $ys_overzicht || !empty($simpbx['actief']) || !empty($ziggo['actief']) || !empty($routit['actief']);
     if ($heeft_tel_overzicht):
     ?>
     <div class="col-md-4">
@@ -358,6 +373,11 @@ function beheerder_kleur($naam, $kleuren) {
                 <?php if (!empty($ziggo['actief'])): ?>
                 <div class="d-flex align-items-center gap-2">
                     <img src="https://vodafoneziggo.scene7.com/is/content/vodafoneziggo/ziggo-logo-orange-v1" height="16" alt="Ziggo" style="object-fit:contain;">
+                </div>
+                <?php endif; ?>
+                <?php if (!empty($routit['actief'])): ?>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="fw-medium small" style="color:#003a70;">RoutIT</span>
                 </div>
                 <?php endif; ?>
             </div>
@@ -1405,7 +1425,7 @@ $iconen = ['pdf' => 'ri-file-pdf-line', 'docx' => 'ri-file-word-line', 'doc' => 
 <!-- ─── Tab: Telefonie ────────────────────────────────────────────────────── -->
 <?php elseif ($actieve_tab === 'telefonie'):
     $ys = !empty($yeastar_centralen) ? $yeastar_centralen[0] : null;
-    $heeft_tel = $ys || !empty($simpbx['actief']);
+    $heeft_tel = $ys || !empty($simpbx['actief']) || !empty($ziggo['actief']) || !empty($routit['actief']);
 ?>
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h6 class="fw-bold mb-0"><i class="ri-phone-line me-1"></i> Telefonie</h6>
@@ -1475,6 +1495,19 @@ $iconen = ['pdf' => 'ri-file-pdf-line', 'docx' => 'ri-file-word-line', 'doc' => 
 </div>
 <?php endif; ?>
 
+<?php if (!empty($routit['actief'])): ?>
+<div class="bg-white rounded-3 border p-4 mb-3" style="max-width:500px;">
+    <h6 class="fw-bold mb-3" style="color:#003a70;">RoutIT</h6>
+    <?php if (!empty($routit['naam'])): ?>
+    <div class="d-flex align-items-center gap-2 mb-2">
+        <span class="text-muted" style="font-size:12px;min-width:90px;">Klantnaam</span>
+        <span style="font-size:12px;"><?= h($routit['naam']) ?></span>
+    </div>
+    <?php endif; ?>
+    <p class="text-muted small mb-0">Klant maakt gebruik van RoutIT (HostedVoice).</p>
+</div>
+<?php endif; ?>
+
 <!-- Modal Telefonie -->
 <div class="modal fade" id="modalTelefonie" tabindex="-1">
     <div class="modal-dialog">
@@ -1502,6 +1535,10 @@ $iconen = ['pdf' => 'ri-file-pdf-line', 'docx' => 'ri-file-word-line', 'doc' => 
                                 <input class="form-check-input" type="checkbox" name="heeft_ziggo" id="tel_ziggo" value="1" <?= !empty($ziggo['actief']) ? 'checked' : '' ?>>
                                 <label class="form-check-label" for="tel_ziggo">Ziggo</label>
                             </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="heeft_routit" id="tel_routit" value="1" <?= !empty($routit['actief']) ? 'checked' : '' ?>>
+                                <label class="form-check-label" for="tel_routit">RoutIT</label>
+                            </div>
                         </div>
                     </div>
                     <div class="mb-3" id="tel_simpbx_velden" style="display:<?= !empty($simpbx['actief']) ? 'block' : 'none' ?>;">
@@ -1511,6 +1548,10 @@ $iconen = ['pdf' => 'ri-file-pdf-line', 'docx' => 'ri-file-word-line', 'doc' => 
                     <div class="mb-3" id="tel_ziggo_velden" style="display:<?= !empty($ziggo['actief']) ? 'block' : 'none' ?>;">
                         <label class="form-label fw-medium">Ziggo klantnaam</label>
                         <input type="text" name="ziggo_naam" class="form-control rounded-3" placeholder="Naam van de klant bij Ziggo" value="<?= h($ziggo['naam'] ?? '') ?>">
+                    </div>
+                    <div class="mb-3" id="tel_routit_velden" style="display:<?= !empty($routit['actief']) ? 'block' : 'none' ?>;">
+                        <label class="form-label fw-medium">RoutIT klantnaam</label>
+                        <input type="text" name="routit_naam" class="form-control rounded-3" placeholder="Naam van de klant bij RoutIT" value="<?= h($routit['naam'] ?? '') ?>">
                     </div>
                     <div id="tel_yeastar_velden" style="display:<?= $ys ? 'block' : 'none' ?>;">
                         <div class="mb-3">
@@ -1585,6 +1626,61 @@ $iconen = ['pdf' => 'ri-file-pdf-line', 'docx' => 'ri-file-word-line', 'doc' => 
         <?php endif; ?>
     </table>
 </div>
+
+<?php
+$heeft_wifi = !empty($internet['wifi_ssid'] ?? null) || $wifi_wachtwoord !== '';
+$heeft_gast = !empty($internet['gast_ssid'] ?? null) || $gast_wachtwoord !== '';
+if ($heeft_wifi || $heeft_gast):
+?>
+<div class="bg-white rounded-3 border p-4 mt-3" style="max-width:600px;">
+    <h6 class="fw-bold mb-3"><i class="ri-wifi-line me-1 text-info"></i> WiFi</h6>
+    <table class="table table-sm table-borderless mb-0">
+        <?php if ($heeft_wifi): ?>
+        <?php if (!empty($internet['wifi_ssid'])): ?>
+        <tr><td class="text-muted" style="width:40%">Netwerknaam (SSID)</td>
+            <td>
+                <code style="font-size:12px;"><?= h($internet['wifi_ssid']) ?></code>
+                <button type="button" class="btn btn-sm btn-link p-0 ms-1" onclick="kopieer(<?= htmlspecialchars(json_encode($internet['wifi_ssid']), ENT_QUOTES) ?>, this)" title="Kopiëren"><i class="ri-file-copy-line" style="font-size:14px;"></i></button>
+            </td>
+        </tr>
+        <?php endif; ?>
+        <?php if ($wifi_wachtwoord !== ''): ?>
+        <tr><td class="text-muted">Wachtwoord</td>
+            <td>
+                <div class="d-flex align-items-center gap-2">
+                    <code id="wifi_ww_weergave" style="font-size:12px;">••••••••</code>
+                    <button type="button" class="btn btn-sm btn-link p-0" onclick="toonVsGeheim('wifi_ww_weergave', <?= htmlspecialchars(json_encode($wifi_wachtwoord), ENT_QUOTES) ?>, this)" title="Tonen"><i class="ri-eye-line" style="font-size:14px;"></i></button>
+                    <button type="button" class="btn btn-sm btn-link p-0" onclick="kopieer(<?= htmlspecialchars(json_encode($wifi_wachtwoord), ENT_QUOTES) ?>, this)" title="Kopiëren"><i class="ri-file-copy-line" style="font-size:14px;"></i></button>
+                </div>
+            </td>
+        </tr>
+        <?php endif; ?>
+        <?php endif; ?>
+        <?php if ($heeft_gast): ?>
+        <?php if ($heeft_wifi): ?><tr><td colspan="2"><hr class="my-1"></td></tr><?php endif; ?>
+        <?php if (!empty($internet['gast_ssid'])): ?>
+        <tr><td class="text-muted">Gast-netwerk (SSID)</td>
+            <td>
+                <code style="font-size:12px;"><?= h($internet['gast_ssid']) ?></code>
+                <button type="button" class="btn btn-sm btn-link p-0 ms-1" onclick="kopieer(<?= htmlspecialchars(json_encode($internet['gast_ssid']), ENT_QUOTES) ?>, this)" title="Kopiëren"><i class="ri-file-copy-line" style="font-size:14px;"></i></button>
+            </td>
+        </tr>
+        <?php endif; ?>
+        <?php if ($gast_wachtwoord !== ''): ?>
+        <tr><td class="text-muted">Gast-wachtwoord</td>
+            <td>
+                <div class="d-flex align-items-center gap-2">
+                    <code id="gast_ww_weergave" style="font-size:12px;">••••••••</code>
+                    <button type="button" class="btn btn-sm btn-link p-0" onclick="toonVsGeheim('gast_ww_weergave', <?= htmlspecialchars(json_encode($gast_wachtwoord), ENT_QUOTES) ?>, this)" title="Tonen"><i class="ri-eye-line" style="font-size:14px;"></i></button>
+                    <button type="button" class="btn btn-sm btn-link p-0" onclick="kopieer(<?= htmlspecialchars(json_encode($gast_wachtwoord), ENT_QUOTES) ?>, this)" title="Kopiëren"><i class="ri-file-copy-line" style="font-size:14px;"></i></button>
+                </div>
+            </td>
+        </tr>
+        <?php endif; ?>
+        <?php endif; ?>
+    </table>
+</div>
+<?php endif; ?>
 <?php endif; ?>
 
 <!-- Modal Internet -->
@@ -1648,6 +1744,32 @@ $iconen = ['pdf' => 'ri-file-pdf-line', 'docx' => 'ri-file-word-line', 'doc' => 
                         <div class="col-12">
                             <label class="form-label fw-medium">Notities</label>
                             <textarea name="notities" class="form-control rounded-3" rows="2"><?= h($internet['notities'] ?? '') ?></textarea>
+                        </div>
+                        <div class="col-12">
+                            <hr class="my-1">
+                            <div class="text-muted small fw-medium mb-2"><i class="ri-wifi-line me-1"></i>WiFi</div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-medium">Netwerknaam (SSID)</label>
+                            <input type="text" name="wifi_ssid" class="form-control rounded-3" placeholder="Bijv. Connect4IT" value="<?= h($internet['wifi_ssid'] ?? '') ?>">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-medium">Wachtwoord</label>
+                            <div class="input-group">
+                                <input type="password" name="wifi_wachtwoord" id="int_wifi_ww" class="form-control rounded-start-3" placeholder="<?= $wifi_wachtwoord !== '' ? 'Laat leeg om ongewijzigd te laten' : '' ?>" autocomplete="new-password">
+                                <button type="button" class="btn btn-outline-secondary" onclick="toggleVeld('int_wifi_ww', this)"><i class="ri-eye-line"></i></button>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-medium">Gast-SSID</label>
+                            <input type="text" name="gast_ssid" class="form-control rounded-3" placeholder="Bijv. Connect4IT-Gast" value="<?= h($internet['gast_ssid'] ?? '') ?>">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-medium">Gast-wachtwoord</label>
+                            <div class="input-group">
+                                <input type="password" name="gast_wachtwoord" id="int_gast_ww" class="form-control rounded-start-3" placeholder="<?= $gast_wachtwoord !== '' ? 'Laat leeg om ongewijzigd te laten' : '' ?>" autocomplete="new-password">
+                                <button type="button" class="btn btn-outline-secondary" onclick="toggleVeld('int_gast_ww', this)"><i class="ri-eye-line"></i></button>
+                            </div>
                         </div>
                     </div>
                     <div class="d-flex gap-2 mt-4">
@@ -2025,6 +2147,10 @@ if (_elSimpbx) _elSimpbx.addEventListener('change', function() {
 var _elZiggo = document.getElementById('tel_ziggo');
 if (_elZiggo) _elZiggo.addEventListener('change', function() {
     document.getElementById('tel_ziggo_velden').style.display = this.checked ? 'block' : 'none';
+});
+var _elRoutit = document.getElementById('tel_routit');
+if (_elRoutit) _elRoutit.addEventListener('change', function() {
+    document.getElementById('tel_routit_velden').style.display = this.checked ? 'block' : 'none';
 });
 
 // ─── Toggle wachtwoord veld in modal ─────────────────────────────────────────

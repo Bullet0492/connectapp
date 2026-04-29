@@ -215,6 +215,10 @@ $base = basis_url();
             <i class="ri-shield-keyhole-line" style="font-size:17px;"></i>
             2FA beveiliging
         </a>
+        <a href="<?= $base ?>/gebruikers/sessie.php">
+            <i class="ri-time-line" style="font-size:17px;"></i>
+            Sessie
+        </a>
         <a href="<?= $base ?>/logout.php">
             <i class="ri-logout-box-r-line" style="font-size:17px;"></i>
             Uitloggen
