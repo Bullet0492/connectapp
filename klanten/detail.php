@@ -91,10 +91,9 @@ $internet = $db->prepare('SELECT * FROM klant_internet WHERE klant_id = ?');
 $internet->execute([$id]);
 $internet = $internet->fetch() ?: null;
 
-// WiFi wachtwoorden decrypten (voor weergave + invul-velden in modal). Migrate_wifi nog niet
+// PPPoE wachtwoord decrypten (voor weergave + invul-veld in modal). Migrate_pppoe nog niet
 // gedraaid? Dan ontbreken de kolommen — vang dat op met null-coalesce.
-$wifi_wachtwoord = ($internet && !empty($internet['wifi_wachtwoord_enc'] ?? null)) ? decrypt_wachtwoord($internet['wifi_wachtwoord_enc']) : '';
-$gast_wachtwoord = ($internet && !empty($internet['gast_wachtwoord_enc'] ?? null)) ? decrypt_wachtwoord($internet['gast_wachtwoord_enc']) : '';
+$pppoe_wachtwoord = ($internet && !empty($internet['pppoe_wachtwoord_enc'] ?? null)) ? decrypt_wachtwoord($internet['pppoe_wachtwoord_enc']) : '';
 
 // Virusscanner
 try {
@@ -549,6 +548,42 @@ function beheerder_kleur($naam, $kleuren) {
             <?php if (!empty($a['locatie'])): ?>
             <div class="small text-muted"><i class="ri-map-pin-line"></i> <?= h($a['locatie']) ?></div>
             <?php endif; ?>
+            <?php
+            $a_wifi_ww = !empty($a['wifi_wachtwoord_enc'] ?? null) ? decrypt_wachtwoord($a['wifi_wachtwoord_enc']) : '';
+            $a_gast_ww = !empty($a['gast_wachtwoord_enc'] ?? null) ? decrypt_wachtwoord($a['gast_wachtwoord_enc']) : '';
+            $heeft_a_wifi = !empty($a['wifi_ssid'] ?? null) || $a_wifi_ww !== '' || !empty($a['gast_ssid'] ?? null) || $a_gast_ww !== '';
+            if ($heeft_a_wifi):
+            ?>
+            <div class="mt-2 pt-2 border-top">
+                <?php if (!empty($a['wifi_ssid'] ?? null) || $a_wifi_ww !== ''): ?>
+                <div class="small d-flex align-items-center gap-2 flex-wrap">
+                    <i class="ri-wifi-line text-info"></i>
+                    <?php if (!empty($a['wifi_ssid'] ?? null)): ?>
+                    <code style="font-size:11px;"><?= h($a['wifi_ssid']) ?></code>
+                    <?php endif; ?>
+                    <?php if ($a_wifi_ww !== ''): ?>
+                    <code id="ap_wifi_<?= $a['id'] ?>" style="font-size:11px;">••••••••</code>
+                    <button type="button" class="btn btn-sm btn-link p-0" onclick="toonVsGeheim('ap_wifi_<?= $a['id'] ?>', <?= htmlspecialchars(json_encode($a_wifi_ww), ENT_QUOTES) ?>, this)" title="Tonen"><i class="ri-eye-line" style="font-size:13px;"></i></button>
+                    <button type="button" class="btn btn-sm btn-link p-0" onclick="kopieer(<?= htmlspecialchars(json_encode($a_wifi_ww), ENT_QUOTES) ?>, this)" title="Kopiëren"><i class="ri-file-copy-line" style="font-size:13px;"></i></button>
+                    <?php endif; ?>
+                </div>
+                <?php endif; ?>
+                <?php if (!empty($a['gast_ssid'] ?? null) || $a_gast_ww !== ''): ?>
+                <div class="small d-flex align-items-center gap-2 flex-wrap mt-1">
+                    <i class="ri-wifi-line text-warning"></i>
+                    <span class="text-muted" style="font-size:11px;">Gast:</span>
+                    <?php if (!empty($a['gast_ssid'] ?? null)): ?>
+                    <code style="font-size:11px;"><?= h($a['gast_ssid']) ?></code>
+                    <?php endif; ?>
+                    <?php if ($a_gast_ww !== ''): ?>
+                    <code id="ap_gast_<?= $a['id'] ?>" style="font-size:11px;">••••••••</code>
+                    <button type="button" class="btn btn-sm btn-link p-0" onclick="toonVsGeheim('ap_gast_<?= $a['id'] ?>', <?= htmlspecialchars(json_encode($a_gast_ww), ENT_QUOTES) ?>, this)" title="Tonen"><i class="ri-eye-line" style="font-size:13px;"></i></button>
+                    <button type="button" class="btn btn-sm btn-link p-0" onclick="kopieer(<?= htmlspecialchars(json_encode($a_gast_ww), ENT_QUOTES) ?>, this)" title="Kopiëren"><i class="ri-file-copy-line" style="font-size:13px;"></i></button>
+                    <?php endif; ?>
+                </div>
+                <?php endif; ?>
+            </div>
+            <?php endif; ?>
         </div>
     </div>
     <?php endforeach; ?>
@@ -626,6 +661,32 @@ function beheerder_kleur($naam, $kleuren) {
                         <div class="col-12">
                             <label class="form-label fw-medium">Notities</label>
                             <textarea name="notities" id="a_notities" class="form-control rounded-3" rows="2"></textarea>
+                        </div>
+                        <div class="col-12">
+                            <hr class="my-1">
+                            <div class="text-muted small fw-medium mb-2"><i class="ri-wifi-line me-1"></i>WiFi <span class="text-muted fw-normal">(invullen voor routers / access points)</span></div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-medium">Netwerknaam (SSID)</label>
+                            <input type="text" name="wifi_ssid" id="a_wifi_ssid" class="form-control rounded-3" placeholder="Bijv. Connect4IT">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-medium">Wachtwoord</label>
+                            <div class="input-group">
+                                <input type="password" name="wifi_wachtwoord" id="a_wifi_ww" class="form-control rounded-start-3" placeholder="" autocomplete="new-password">
+                                <button type="button" class="btn btn-outline-secondary" onclick="toggleVeld('a_wifi_ww', this)"><i class="ri-eye-line"></i></button>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-medium">Gast-SSID</label>
+                            <input type="text" name="gast_ssid" id="a_gast_ssid" class="form-control rounded-3" placeholder="Bijv. Connect4IT-Gast">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-medium">Gast-wachtwoord</label>
+                            <div class="input-group">
+                                <input type="password" name="gast_wachtwoord" id="a_gast_ww" class="form-control rounded-start-3" placeholder="" autocomplete="new-password">
+                                <button type="button" class="btn btn-outline-secondary" onclick="toggleVeld('a_gast_ww', this)"><i class="ri-eye-line"></i></button>
+                            </div>
                         </div>
                     </div>
                     <div class="d-flex gap-2 mt-4">
@@ -1628,55 +1689,33 @@ $iconen = ['pdf' => 'ri-file-pdf-line', 'docx' => 'ri-file-word-line', 'doc' => 
 </div>
 
 <?php
-$heeft_wifi = !empty($internet['wifi_ssid'] ?? null) || $wifi_wachtwoord !== '';
-$heeft_gast = !empty($internet['gast_ssid'] ?? null) || $gast_wachtwoord !== '';
-if ($heeft_wifi || $heeft_gast):
+$heeft_pppoe = !empty($internet['pppoe_gebruiker'] ?? null) || $pppoe_wachtwoord !== '' || !empty($internet['vlan_id'] ?? null);
+if ($heeft_pppoe):
 ?>
 <div class="bg-white rounded-3 border p-4 mt-3" style="max-width:600px;">
-    <h6 class="fw-bold mb-3"><i class="ri-wifi-line me-1 text-info"></i> WiFi</h6>
+    <h6 class="fw-bold mb-3"><i class="ri-key-2-line me-1 text-secondary"></i> PPPoE / VLAN</h6>
     <table class="table table-sm table-borderless mb-0">
-        <?php if ($heeft_wifi): ?>
-        <?php if (!empty($internet['wifi_ssid'])): ?>
-        <tr><td class="text-muted" style="width:40%">Netwerknaam (SSID)</td>
+        <?php if (!empty($internet['pppoe_gebruiker'] ?? null)): ?>
+        <tr><td class="text-muted" style="width:40%">PPPoE gebruiker</td>
             <td>
-                <code style="font-size:12px;"><?= h($internet['wifi_ssid']) ?></code>
-                <button type="button" class="btn btn-sm btn-link p-0 ms-1" onclick="kopieer(<?= htmlspecialchars(json_encode($internet['wifi_ssid']), ENT_QUOTES) ?>, this)" title="Kopiëren"><i class="ri-file-copy-line" style="font-size:14px;"></i></button>
+                <code style="font-size:12px;"><?= h($internet['pppoe_gebruiker']) ?></code>
+                <button type="button" class="btn btn-sm btn-link p-0 ms-1" onclick="kopieer(<?= htmlspecialchars(json_encode($internet['pppoe_gebruiker']), ENT_QUOTES) ?>, this)" title="Kopiëren"><i class="ri-file-copy-line" style="font-size:14px;"></i></button>
             </td>
         </tr>
         <?php endif; ?>
-        <?php if ($wifi_wachtwoord !== ''): ?>
-        <tr><td class="text-muted">Wachtwoord</td>
+        <?php if ($pppoe_wachtwoord !== ''): ?>
+        <tr><td class="text-muted">PPPoE wachtwoord</td>
             <td>
                 <div class="d-flex align-items-center gap-2">
-                    <code id="wifi_ww_weergave" style="font-size:12px;">••••••••</code>
-                    <button type="button" class="btn btn-sm btn-link p-0" onclick="toonVsGeheim('wifi_ww_weergave', <?= htmlspecialchars(json_encode($wifi_wachtwoord), ENT_QUOTES) ?>, this)" title="Tonen"><i class="ri-eye-line" style="font-size:14px;"></i></button>
-                    <button type="button" class="btn btn-sm btn-link p-0" onclick="kopieer(<?= htmlspecialchars(json_encode($wifi_wachtwoord), ENT_QUOTES) ?>, this)" title="Kopiëren"><i class="ri-file-copy-line" style="font-size:14px;"></i></button>
+                    <code id="pppoe_ww_weergave" style="font-size:12px;">••••••••</code>
+                    <button type="button" class="btn btn-sm btn-link p-0" onclick="toonVsGeheim('pppoe_ww_weergave', <?= htmlspecialchars(json_encode($pppoe_wachtwoord), ENT_QUOTES) ?>, this)" title="Tonen"><i class="ri-eye-line" style="font-size:14px;"></i></button>
+                    <button type="button" class="btn btn-sm btn-link p-0" onclick="kopieer(<?= htmlspecialchars(json_encode($pppoe_wachtwoord), ENT_QUOTES) ?>, this)" title="Kopiëren"><i class="ri-file-copy-line" style="font-size:14px;"></i></button>
                 </div>
             </td>
         </tr>
         <?php endif; ?>
-        <?php endif; ?>
-        <?php if ($heeft_gast): ?>
-        <?php if ($heeft_wifi): ?><tr><td colspan="2"><hr class="my-1"></td></tr><?php endif; ?>
-        <?php if (!empty($internet['gast_ssid'])): ?>
-        <tr><td class="text-muted">Gast-netwerk (SSID)</td>
-            <td>
-                <code style="font-size:12px;"><?= h($internet['gast_ssid']) ?></code>
-                <button type="button" class="btn btn-sm btn-link p-0 ms-1" onclick="kopieer(<?= htmlspecialchars(json_encode($internet['gast_ssid']), ENT_QUOTES) ?>, this)" title="Kopiëren"><i class="ri-file-copy-line" style="font-size:14px;"></i></button>
-            </td>
-        </tr>
-        <?php endif; ?>
-        <?php if ($gast_wachtwoord !== ''): ?>
-        <tr><td class="text-muted">Gast-wachtwoord</td>
-            <td>
-                <div class="d-flex align-items-center gap-2">
-                    <code id="gast_ww_weergave" style="font-size:12px;">••••••••</code>
-                    <button type="button" class="btn btn-sm btn-link p-0" onclick="toonVsGeheim('gast_ww_weergave', <?= htmlspecialchars(json_encode($gast_wachtwoord), ENT_QUOTES) ?>, this)" title="Tonen"><i class="ri-eye-line" style="font-size:14px;"></i></button>
-                    <button type="button" class="btn btn-sm btn-link p-0" onclick="kopieer(<?= htmlspecialchars(json_encode($gast_wachtwoord), ENT_QUOTES) ?>, this)" title="Kopiëren"><i class="ri-file-copy-line" style="font-size:14px;"></i></button>
-                </div>
-            </td>
-        </tr>
-        <?php endif; ?>
+        <?php if (!empty($internet['vlan_id'] ?? null)): ?>
+        <tr><td class="text-muted">VLAN ID</td><td><code style="font-size:12px;"><?= (int)$internet['vlan_id'] ?></code></td></tr>
         <?php endif; ?>
     </table>
 </div>
@@ -1747,29 +1786,22 @@ if ($heeft_wifi || $heeft_gast):
                         </div>
                         <div class="col-12">
                             <hr class="my-1">
-                            <div class="text-muted small fw-medium mb-2"><i class="ri-wifi-line me-1"></i>WiFi</div>
+                            <div class="text-muted small fw-medium mb-2"><i class="ri-key-2-line me-1"></i>PPPoE / VLAN <span class="text-muted fw-normal">(optioneel — invullen indien van toepassing)</span></div>
                         </div>
                         <div class="col-12 col-md-6">
-                            <label class="form-label fw-medium">Netwerknaam (SSID)</label>
-                            <input type="text" name="wifi_ssid" class="form-control rounded-3" placeholder="Bijv. Connect4IT" value="<?= h($internet['wifi_ssid'] ?? '') ?>">
+                            <label class="form-label fw-medium">PPPoE gebruiker</label>
+                            <input type="text" name="pppoe_gebruiker" class="form-control rounded-3" placeholder="bijv. user@kpn-mobile.com" value="<?= h($internet['pppoe_gebruiker'] ?? '') ?>">
                         </div>
                         <div class="col-12 col-md-6">
-                            <label class="form-label fw-medium">Wachtwoord</label>
+                            <label class="form-label fw-medium">PPPoE wachtwoord</label>
                             <div class="input-group">
-                                <input type="password" name="wifi_wachtwoord" id="int_wifi_ww" class="form-control rounded-start-3" placeholder="<?= $wifi_wachtwoord !== '' ? 'Laat leeg om ongewijzigd te laten' : '' ?>" autocomplete="new-password">
-                                <button type="button" class="btn btn-outline-secondary" onclick="toggleVeld('int_wifi_ww', this)"><i class="ri-eye-line"></i></button>
+                                <input type="password" name="pppoe_wachtwoord" id="int_pppoe_ww" class="form-control rounded-start-3" placeholder="<?= $pppoe_wachtwoord !== '' ? 'Laat leeg om ongewijzigd te laten' : '' ?>" autocomplete="new-password">
+                                <button type="button" class="btn btn-outline-secondary" onclick="toggleVeld('int_pppoe_ww', this)"><i class="ri-eye-line"></i></button>
                             </div>
                         </div>
                         <div class="col-12 col-md-6">
-                            <label class="form-label fw-medium">Gast-SSID</label>
-                            <input type="text" name="gast_ssid" class="form-control rounded-3" placeholder="Bijv. Connect4IT-Gast" value="<?= h($internet['gast_ssid'] ?? '') ?>">
-                        </div>
-                        <div class="col-12 col-md-6">
-                            <label class="form-label fw-medium">Gast-wachtwoord</label>
-                            <div class="input-group">
-                                <input type="password" name="gast_wachtwoord" id="int_gast_ww" class="form-control rounded-start-3" placeholder="<?= $gast_wachtwoord !== '' ? 'Laat leeg om ongewijzigd te laten' : '' ?>" autocomplete="new-password">
-                                <button type="button" class="btn btn-outline-secondary" onclick="toggleVeld('int_gast_ww', this)"><i class="ri-eye-line"></i></button>
-                            </div>
+                            <label class="form-label fw-medium">VLAN ID</label>
+                            <input type="number" min="1" max="4094" name="vlan_id" class="form-control rounded-3" placeholder="bijv. 6 (KPN glasvezel)" value="<?= h($internet['vlan_id'] ?? '') ?>">
                         </div>
                     </div>
                     <div class="d-flex gap-2 mt-4">
@@ -1984,6 +2016,14 @@ function bewerkApparaat(a) {
     document.getElementById('a_ip_adres').value   = a.ip_adres || '';
     document.getElementById('a_firmware').value   = a.firmware || '';
     document.getElementById('a_notities').value   = a.notities || '';
+    document.getElementById('a_wifi_ssid').value  = a.wifi_ssid || '';
+    document.getElementById('a_gast_ssid').value  = a.gast_ssid || '';
+    var wifiWw = document.getElementById('a_wifi_ww');
+    var gastWw = document.getElementById('a_gast_ww');
+    wifiWw.value = '';
+    gastWw.value = '';
+    wifiWw.placeholder = a.wifi_wachtwoord_enc ? 'Laat leeg om ongewijzigd te laten' : '';
+    gastWw.placeholder = a.gast_wachtwoord_enc ? 'Laat leeg om ongewijzigd te laten' : '';
     new bootstrap.Modal(document.getElementById('modalApparaat')).show();
 }
 
