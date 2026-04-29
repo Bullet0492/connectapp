@@ -74,9 +74,19 @@ function ip_adres(): string {
     return $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
 }
 
-function login_is_geblokkeerd(): bool {
-    $stmt = db()->prepare('SELECT geblokkeerd_tot FROM login_pogingen WHERE ip = ?');
-    $stmt->execute([ip_adres()]);
+/**
+ * Bruteforce-blokkade per (IP + login). Eén user's mislukte pogingen blokkeren
+ * niet andere gebruikers op hetzelfde IP. Fallback naar IP-only zolang de
+ * `login`-kolom nog niet bestaat (migrate_login_pogingen.php).
+ */
+function login_is_geblokkeerd(string $login = ''): bool {
+    try {
+        $stmt = db()->prepare('SELECT geblokkeerd_tot FROM login_pogingen WHERE ip = ? AND login = ?');
+        $stmt->execute([ip_adres(), $login]);
+    } catch (PDOException $e) {
+        $stmt = db()->prepare('SELECT geblokkeerd_tot FROM login_pogingen WHERE ip = ?');
+        $stmt->execute([ip_adres()]);
+    }
     $rij = $stmt->fetch();
     if ($rij && $rij['geblokkeerd_tot'] !== null) {
         return new DateTime($rij['geblokkeerd_tot']) > new DateTime();
@@ -84,13 +94,20 @@ function login_is_geblokkeerd(): bool {
     return false;
 }
 
-function registreer_mislukte_poging(): void {
+function registreer_mislukte_poging(string $login = ''): void {
     $ip           = ip_adres();
     $max          = 5;
     $blok_minuten = 15;
 
-    $stmt = db()->prepare('SELECT id, pogingen, geblokkeerd_tot FROM login_pogingen WHERE ip = ?');
-    $stmt->execute([$ip]);
+    $kolom_login_aanwezig = true;
+    try {
+        $stmt = db()->prepare('SELECT id, pogingen, geblokkeerd_tot FROM login_pogingen WHERE ip = ? AND login = ?');
+        $stmt->execute([$ip, $login]);
+    } catch (PDOException $e) {
+        $kolom_login_aanwezig = false;
+        $stmt = db()->prepare('SELECT id, pogingen, geblokkeerd_tot FROM login_pogingen WHERE ip = ?');
+        $stmt->execute([$ip]);
+    }
     $rij = $stmt->fetch();
 
     if ($rij) {
@@ -102,16 +119,26 @@ function registreer_mislukte_poging(): void {
         db()->prepare('UPDATE login_pogingen SET pogingen = ?, geblokkeerd_tot = ?, laatste_poging = NOW() WHERE id = ?')
             ->execute([$nieuw, $geblokkeerd_tot, $rij['id']]);
     } else {
-        db()->prepare('INSERT INTO login_pogingen (ip, pogingen, laatste_poging) VALUES (?, 1, NOW())')
-            ->execute([$ip]);
+        if ($kolom_login_aanwezig) {
+            db()->prepare('INSERT INTO login_pogingen (ip, login, pogingen, laatste_poging) VALUES (?, ?, 1, NOW())')
+                ->execute([$ip, $login]);
+        } else {
+            db()->prepare('INSERT INTO login_pogingen (ip, pogingen, laatste_poging) VALUES (?, 1, NOW())')
+                ->execute([$ip]);
+        }
     }
 
     db()->exec("DELETE FROM login_pogingen WHERE (geblokkeerd_tot IS NOT NULL AND geblokkeerd_tot < NOW()) OR (geblokkeerd_tot IS NULL AND laatste_poging < DATE_SUB(NOW(), INTERVAL 1 HOUR))");
 }
 
-function reset_login_pogingen(): void {
-    db()->prepare('DELETE FROM login_pogingen WHERE ip = ?')
-        ->execute([ip_adres()]);
+function reset_login_pogingen(string $login = ''): void {
+    try {
+        db()->prepare('DELETE FROM login_pogingen WHERE ip = ? AND login = ?')
+            ->execute([ip_adres(), $login]);
+    } catch (PDOException $e) {
+        db()->prepare('DELETE FROM login_pogingen WHERE ip = ?')
+            ->execute([ip_adres()]);
+    }
 }
 
 /**
@@ -119,7 +146,7 @@ function reset_login_pogingen(): void {
  * Geeft terug: 'ok' | '2fa_vereist' | 'geblokkeerd' | 'fout'
  */
 function login(string $login, string $wachtwoord): string {
-    if (login_is_geblokkeerd()) {
+    if (login_is_geblokkeerd($login)) {
         return 'geblokkeerd';
     }
 
@@ -146,13 +173,14 @@ function login(string $login, string $wachtwoord): string {
     }
 
     if ($user && password_verify($wachtwoord, $user['wachtwoord'])) {
-        reset_login_pogingen();
+        reset_login_pogingen($login);
         sessie_start();
 
         if (!empty($user['totp_actief'])) {
             // Wachtwoord klopt maar 2FA nog vereist — sla user_id tijdelijk op
             session_regenerate_id(true);
             $_SESSION['2fa_user_id'] = $user['id'];
+            $_SESSION['2fa_login']   = $login; // voor bruteforce-tracking per (ip,login)
             $_SESSION['2fa_expires'] = time() + 300; // 5 minuten om code in te voeren
             return '2fa_vereist';
         }
@@ -169,7 +197,7 @@ function login(string $login, string $wachtwoord): string {
         return 'ok';
     }
 
-    registreer_mislukte_poging();
+    registreer_mislukte_poging($login);
     return 'fout';
 }
 
@@ -191,7 +219,8 @@ function verifieer_2fa(string $code): string {
     if (!is_2fa_pending()) {
         return 'verlopen';
     }
-    if (login_is_geblokkeerd()) {
+    $tfa_login = (string)($_SESSION['2fa_login'] ?? '');
+    if (login_is_geblokkeerd($tfa_login)) {
         return 'geblokkeerd';
     }
 
@@ -213,13 +242,13 @@ function verifieer_2fa(string $code): string {
     $secret = totp_decrypt_secret($user['totp_secret']);
 
     if (!totp_verifieer($secret, $code)) {
-        registreer_mislukte_poging();
+        registreer_mislukte_poging($tfa_login);
         return 'fout';
     }
 
     // Code correct: schoon de pending-sessie op en log volledig in
-    unset($_SESSION['2fa_user_id'], $_SESSION['2fa_expires']);
-    reset_login_pogingen();
+    unset($_SESSION['2fa_user_id'], $_SESSION['2fa_login'], $_SESSION['2fa_expires']);
+    reset_login_pogingen($tfa_login);
 
     session_regenerate_id(true);
     $_SESSION['user_id']            = $user['id'];

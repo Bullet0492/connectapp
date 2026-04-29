@@ -41,6 +41,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reset_user_id'])) {
     }
 }
 
+// POST: één login-poging deblokkeren
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['deblokkeer_id'])) {
+    csrf_check();
+    $deblok_id = (int)$_POST['deblokkeer_id'];
+    $db->prepare('DELETE FROM login_pogingen WHERE id = ?')->execute([$deblok_id]);
+    log_actie('login_deblokkeerd', 'Login_pogingen ID: ' . $deblok_id);
+    flash_set('succes', 'Deblokkeerd.');
+    header('Location: index.php');
+    exit;
+}
+
+// POST: alle blokkades opheffen
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['deblokkeer_alles'])) {
+    csrf_check();
+    $db->exec('DELETE FROM login_pogingen');
+    log_actie('login_deblokkeerd', 'Alle blokkades opgeheven');
+    flash_set('succes', 'Alle blokkades opgeheven.');
+    header('Location: index.php');
+    exit;
+}
+
 // POST: gebruiker verwijderen
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['verwijder_user_id'])) {
     csrf_check();
@@ -60,6 +81,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['verwijder_user_id']))
 }
 
 $gebruikers = $db->query("SELECT id, naam, IFNULL(gebruikersnaam,'') AS gebruikersnaam, email, rol, aangemaakt_op FROM users ORDER BY naam")->fetchAll();
+
+// Login-pogingen en blokkades — tonen alleen actieve rijen (geblokkeerd of recent)
+try {
+    $login_pogingen = $db->query("SELECT id, ip, login, pogingen, geblokkeerd_tot, laatste_poging
+                                  FROM login_pogingen
+                                  WHERE (geblokkeerd_tot IS NOT NULL AND geblokkeerd_tot > NOW())
+                                     OR laatste_poging > DATE_SUB(NOW(), INTERVAL 1 HOUR)
+                                  ORDER BY laatste_poging DESC")->fetchAll();
+} catch (PDOException $e) {
+    // Migrate_login_pogingen nog niet gedraaid? Probeer zonder login-kolom.
+    $login_pogingen = $db->query("SELECT id, ip, '' AS login, pogingen, geblokkeerd_tot, laatste_poging
+                                  FROM login_pogingen
+                                  WHERE (geblokkeerd_tot IS NOT NULL AND geblokkeerd_tot > NOW())
+                                     OR laatste_poging > DATE_SUB(NOW(), INTERVAL 1 HOUR)
+                                  ORDER BY laatste_poging DESC")->fetchAll();
+}
 
 require_once __DIR__ . '/../includes/header.php';
 ?>
@@ -133,6 +170,75 @@ require_once __DIR__ . '/../includes/header.php';
         </tbody>
     </table>
 </div>
+
+<!-- Login pogingen / Blokkades -->
+<div class="d-flex justify-content-between align-items-center mt-5 mb-3">
+    <h5 class="fw-bold mb-0"><i class="ri-lock-line me-1"></i> Login pogingen</h5>
+    <?php if (!empty($login_pogingen)): ?>
+    <form method="post" class="d-inline">
+        <?= csrf_field() ?>
+        <input type="hidden" name="deblokkeer_alles" value="1">
+        <button type="submit" class="btn btn-outline-danger btn-sm"
+                onclick="return confirm('Alle blokkades en login-pogingen wissen?')">
+            <i class="ri-delete-bin-line"></i> Alles wissen
+        </button>
+    </form>
+    <?php endif; ?>
+</div>
+
+<?php if (empty($login_pogingen)): ?>
+<div class="bg-white rounded-3 border p-4 text-center text-muted">
+    <i class="ri-shield-check-line text-success" style="font-size:24px;"></i>
+    <div class="small mt-1">Geen actieve login-pogingen of blokkades.</div>
+</div>
+<?php else: ?>
+<div class="bg-white rounded-3 border">
+    <table class="table table-hover mb-0">
+        <thead class="table-light">
+            <tr>
+                <th>IP</th>
+                <th>Login</th>
+                <th>Pogingen</th>
+                <th>Status</th>
+                <th>Laatste poging</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+        <?php foreach ($login_pogingen as $lp):
+            $geblokkeerd = $lp['geblokkeerd_tot'] !== null && strtotime($lp['geblokkeerd_tot']) > time();
+            $resterend = $geblokkeerd ? max(0, strtotime($lp['geblokkeerd_tot']) - time()) : 0;
+        ?>
+        <tr <?= $geblokkeerd ? 'style="background:#fef2f2;"' : '' ?>>
+            <td><code style="font-size:12px;"><?= h($lp['ip']) ?></code></td>
+            <td class="small"><?= h($lp['login'] ?: '—') ?></td>
+            <td><span class="badge bg-secondary"><?= (int)$lp['pogingen'] ?></span></td>
+            <td>
+                <?php if ($geblokkeerd): ?>
+                    <span class="badge bg-danger">
+                        <i class="ri-lock-line"></i> Geblokkeerd nog <?= ceil($resterend / 60) ?> min
+                    </span>
+                <?php else: ?>
+                    <span class="badge bg-light text-dark border">Actief telt</span>
+                <?php endif; ?>
+            </td>
+            <td class="small text-muted"><?= h(date('d-m-Y H:i', strtotime($lp['laatste_poging']))) ?></td>
+            <td class="text-end">
+                <form method="post" class="d-inline">
+                    <?= csrf_field() ?>
+                    <input type="hidden" name="deblokkeer_id" value="<?= (int)$lp['id'] ?>">
+                    <button type="submit" class="btn btn-sm <?= $geblokkeerd ? 'btn-danger' : 'btn-outline-secondary' ?>"
+                            onclick="return confirm('Deblokkeren / pogingen wissen voor dit IP+login?')">
+                        <i class="ri-shield-cross-line"></i> Deblokkeer
+                    </button>
+                </form>
+            </td>
+        </tr>
+        <?php endforeach; ?>
+        </tbody>
+    </table>
+</div>
+<?php endif; ?>
 
 <!-- Modal: Wachtwoord resetten -->
 <div class="modal fade" id="modalReset" tabindex="-1">
