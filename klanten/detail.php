@@ -86,14 +86,28 @@ try {
     $routit = null;
 }
 
-// Internet provider
-$internet = $db->prepare('SELECT * FROM klant_internet WHERE klant_id = ?');
-$internet->execute([$id]);
-$internet = $internet->fetch() ?: null;
+// Internet verbindingen (kan meerdere zijn). Primair eerst, dan oudste eerst.
+try {
+    $st = $db->prepare('SELECT * FROM klant_internet WHERE klant_id = ? ORDER BY is_primair DESC, id ASC');
+    $st->execute([$id]);
+    $internets = $st->fetchAll() ?: [];
+} catch (PDOException $e) {
+    // migrate_internet_meervoudig nog niet uitgevoerd? Fallback op oude kolomstructuur
+    $st = $db->prepare('SELECT * FROM klant_internet WHERE klant_id = ?');
+    $st->execute([$id]);
+    $internets = $st->fetchAll() ?: [];
+}
 
-// PPPoE wachtwoord decrypten (voor weergave + invul-veld in modal). Migrate_pppoe nog niet
-// gedraaid? Dan ontbreken de kolommen — vang dat op met null-coalesce.
-$pppoe_wachtwoord = ($internet && !empty($internet['pppoe_wachtwoord_enc'] ?? null)) ? decrypt_wachtwoord($internet['pppoe_wachtwoord_enc']) : '';
+// PPPoE wachtwoorden per verbinding decrypten (voor weergave + invul-veld in modal)
+$pppoe_wachtwoorden = [];
+foreach ($internets as $i => $rij) {
+    $pppoe_wachtwoorden[$rij['id'] ?? $i] = !empty($rij['pppoe_wachtwoord_enc'] ?? null)
+        ? decrypt_wachtwoord($rij['pppoe_wachtwoord_enc']) : '';
+}
+
+// Backward-compat: $internet = primaire (of eerste) verbinding voor overzicht-card
+$internet = $internets[0] ?? null;
+$pppoe_wachtwoord = $internet ? ($pppoe_wachtwoorden[$internet['id'] ?? 0] ?? '') : '';
 
 // Virusscanner
 try {
@@ -207,7 +221,7 @@ require_once __DIR__ . '/../includes/header.php';
     <li class="nav-item">
         <a class="nav-link <?= $actieve_tab === 'internet' ? 'active' : '' ?>" href="?id=<?= $id ?>&tab=internet">
             <i class="ri-wifi-line"></i> Internet
-            <?php if ($internet): ?><span class="badge bg-success ms-1" style="font-size:10px;">&#10003;</span><?php endif; ?>
+            <?php if (!empty($internets)): ?><span class="badge bg-success ms-1" style="font-size:10px;"><?= count($internets) > 1 ? count($internets) : '&#10003;' ?></span><?php endif; ?>
         </a>
     </li>
     <li class="nav-item">
@@ -385,27 +399,45 @@ function beheerder_kleur($naam, $kleuren) {
     <?php endif; ?>
 
     <!-- Internet -->
-    <?php if ($internet): ?>
+    <?php if (!empty($internets)): ?>
     <div class="col-md-4">
         <div class="bg-white rounded-3 border p-4 h-100">
-            <h6 class="fw-bold mb-3"><i class="ri-wifi-line me-1 text-info"></i> Internet</h6>
+            <h6 class="fw-bold mb-3">
+                <i class="ri-wifi-line me-1 text-info"></i> Internet
+                <?php if (count($internets) > 1): ?>
+                <span class="badge bg-secondary ms-1" style="font-size:10px;"><?= count($internets) ?> verbindingen</span>
+                <?php endif; ?>
+            </h6>
+            <?php foreach ($internets as $iv_idx => $iv): ?>
+            <?php if ($iv_idx > 0): ?><hr class="my-2"><?php endif; ?>
+            <?php
+                $iv_provider_label = $iv['provider'] === 'Anders' ? ($iv['provider_anders'] ?: 'Onbekend') : $iv['provider'];
+                $iv_titel = !empty($iv['omschrijving']) ? $iv['omschrijving'] : $iv_provider_label;
+            ?>
             <div class="fw-medium mb-1">
-                <?= $internet['provider'] === 'Anders' ? h($internet['provider_anders'] ?: 'Onbekend') : h($internet['provider']) ?>
+                <?= h($iv_titel) ?>
+                <?php if (!empty($iv['is_primair']) && count($internets) > 1): ?>
+                <span class="badge bg-primary ms-1" style="font-size:9px;">Primair</span>
+                <?php endif; ?>
             </div>
             <div class="d-flex flex-column gap-1">
-                <?php if (!empty($internet['type'])): ?>
-                <span class="text-muted small"><?= h($internet['type']) ?></span>
+                <?php if (!empty($iv['omschrijving'])): ?>
+                <span class="text-muted small"><?= h($iv_provider_label) ?></span>
                 <?php endif; ?>
-                <?php if (!empty($internet['snelheid_down'])): ?>
-                <span class="text-muted small"><?= h($internet['snelheid_down']) ?> / <?= h($internet['snelheid_up']) ?> Mbit</span>
+                <?php if (!empty($iv['type'])): ?>
+                <span class="text-muted small"><?= h($iv['type']) ?></span>
                 <?php endif; ?>
-                <?php if (!empty($internet['ip_adres'])): ?>
-                <span class="text-muted small"><code style="font-size:11px;"><?= h($internet['ip_adres']) ?></code></span>
+                <?php if (!empty($iv['snelheid_down'])): ?>
+                <span class="text-muted small"><?= h($iv['snelheid_down']) ?> / <?= h($iv['snelheid_up']) ?> Mbit</span>
                 <?php endif; ?>
-                <?php if (!empty($internet['backup_4g'])): ?>
+                <?php if (!empty($iv['ip_adres'])): ?>
+                <span class="text-muted small"><code style="font-size:11px;"><?= h($iv['ip_adres']) ?></code></span>
+                <?php endif; ?>
+                <?php if (!empty($iv['backup_4g'])): ?>
                 <span class="badge bg-warning text-dark mt-1" style="width:fit-content;font-size:10px;"><i class="ri-signal-tower-line me-1"></i>4G backup</span>
                 <?php endif; ?>
             </div>
+            <?php endforeach; ?>
         </div>
     </div>
     <?php endif; ?>
@@ -1644,82 +1676,111 @@ $iconen = ['pdf' => 'ri-file-pdf-line', 'docx' => 'ri-file-word-line', 'doc' => 
 <!-- ─── Tab: Internet ─────────────────────────────────────────────────────── -->
 <?php elseif ($actieve_tab === 'internet'): ?>
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h6 class="fw-bold mb-0"><i class="ri-wifi-line me-1"></i> Internet aansluiting</h6>
-    <div class="d-flex gap-2">
-        <?php if ($internet): ?>
-        <form method="post" action="<?= $base ?>/internet/verwijderen.php" onsubmit="return confirm('Internet aansluiting verwijderen?')">
-            <?= csrf_field() ?>
-            <input type="hidden" name="klant_id" value="<?= $id ?>">
-            <button type="submit" class="btn btn-outline-danger btn-sm"><i class="ri-delete-bin-line"></i> Verwijderen</button>
-        </form>
-        <?php endif; ?>
-        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalInternet">
-            <?= $internet ? '<i class="ri-edit-line"></i> Bewerken' : '+ Toevoegen' ?>
-        </button>
-    </div>
+    <h6 class="fw-bold mb-0"><i class="ri-wifi-line me-1"></i> Internet verbindingen</h6>
+    <button class="btn btn-primary btn-sm" onclick="nieuwInternet()">+ Toevoegen</button>
 </div>
-<?php if (!$internet): ?>
-    <div class="bg-white rounded-3 border p-4 text-center text-muted">Nog geen internet gegevens.</div>
+<?php if (empty($internets)): ?>
+    <div class="bg-white rounded-3 border p-4 text-center text-muted">Nog geen internet verbindingen.</div>
 <?php else: ?>
-<div class="bg-white rounded-3 border p-4" style="max-width:600px;">
+<div class="d-flex flex-column gap-3">
+<?php foreach ($internets as $iv):
+    $iv_id = (int)$iv['id'];
+    $iv_pppoe_ww = $pppoe_wachtwoorden[$iv_id] ?? '';
+    $iv_heeft_pppoe = !empty($iv['pppoe_gebruiker'] ?? null) || $iv_pppoe_ww !== '' || !empty($iv['vlan_id'] ?? null);
+    $iv_provider_label = $iv['provider'] === 'Anders' ? ($iv['provider_anders'] ?: 'Anders') : $iv['provider'];
+?>
+<div class="bg-white rounded-3 border p-4" style="max-width:700px;">
+    <div class="d-flex justify-content-between align-items-start mb-3">
+        <div>
+            <div class="fw-bold" style="font-size:15px;">
+                <?= h($iv['omschrijving'] ?? '') ?: h($iv_provider_label) ?>
+                <?php if (!empty($iv['is_primair'])): ?>
+                <span class="badge bg-primary ms-1" style="font-size:10px;">Primair</span>
+                <?php endif; ?>
+            </div>
+            <?php if (!empty($iv['omschrijving'])): ?>
+            <div class="text-muted small"><?= h($iv_provider_label) ?></div>
+            <?php endif; ?>
+        </div>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-secondary btn-sm" onclick='bewerkInternet(<?= json_encode([
+                "id" => $iv_id,
+                "omschrijving" => $iv["omschrijving"] ?? "",
+                "provider" => $iv["provider"] ?? "",
+                "provider_anders" => $iv["provider_anders"] ?? "",
+                "type" => $iv["type"] ?? "",
+                "snelheid_down" => $iv["snelheid_down"] ?? "",
+                "snelheid_up" => $iv["snelheid_up"] ?? "",
+                "ip_adres" => $iv["ip_adres"] ?? "",
+                "backup_4g" => !empty($iv["backup_4g"]) ? 1 : 0,
+                "is_primair" => !empty($iv["is_primair"]) ? 1 : 0,
+                "contract_datum" => $iv["contract_datum"] ?? "",
+                "notities" => $iv["notities"] ?? "",
+                "pppoe_gebruiker" => $iv["pppoe_gebruiker"] ?? "",
+                "vlan_id" => $iv["vlan_id"] ?? "",
+                "heeft_pppoe_ww" => $iv_pppoe_ww !== '' ? 1 : 0,
+            ], JSON_HEX_APOS | JSON_HEX_QUOT) ?>)'><i class="ri-edit-line"></i> Bewerken</button>
+            <form method="post" action="<?= $base ?>/internet/verwijderen.php" onsubmit="return confirm('Deze internet verbinding verwijderen?')" style="display:inline;">
+                <?= csrf_field() ?>
+                <input type="hidden" name="klant_id" value="<?= $id ?>">
+                <input type="hidden" name="internet_id" value="<?= $iv_id ?>">
+                <button type="submit" class="btn btn-outline-danger btn-sm"><i class="ri-delete-bin-line"></i></button>
+            </form>
+        </div>
+    </div>
     <table class="table table-sm table-borderless mb-0">
-        <tr><td class="text-muted" style="width:40%">Provider</td><td><strong><?= h($internet['provider']) ?></strong></td></tr>
-        <?php if (!empty($internet['provider_anders'])): ?>
-        <tr><td class="text-muted">Provider naam</td><td><?= h($internet['provider_anders']) ?></td></tr>
+        <tr><td class="text-muted" style="width:40%">Provider</td><td><strong><?= h($iv_provider_label) ?></strong></td></tr>
+        <?php if (!empty($iv['type'])): ?>
+        <tr><td class="text-muted">Type verbinding</td><td><?= h($iv['type']) ?></td></tr>
         <?php endif; ?>
-        <?php if (!empty($internet['type'])): ?>
-        <tr><td class="text-muted">Type verbinding</td><td><?= h($internet['type']) ?></td></tr>
+        <?php if (!empty($iv['snelheid_down'])): ?>
+        <tr><td class="text-muted">Snelheid</td><td><?= h($iv['snelheid_down']) ?> / <?= h($iv['snelheid_up']) ?> Mbit</td></tr>
         <?php endif; ?>
-        <?php if (!empty($internet['snelheid_down'])): ?>
-        <tr><td class="text-muted">Snelheid</td><td><?= h($internet['snelheid_down']) ?> / <?= h($internet['snelheid_up']) ?> Mbit</td></tr>
+        <?php if (!empty($iv['ip_adres'])): ?>
+        <tr><td class="text-muted">Vast IP-adres</td><td><code><?= h($iv['ip_adres']) ?></code></td></tr>
         <?php endif; ?>
-        <?php if (!empty($internet['ip_adres'])): ?>
-        <tr><td class="text-muted">Vast IP-adres</td><td><code><?= h($internet['ip_adres']) ?></code></td></tr>
-        <?php endif; ?>
-        <?php if (!empty($internet['backup_4g'])): ?>
+        <?php if (!empty($iv['backup_4g'])): ?>
         <tr><td class="text-muted">4G backup</td><td><span class="badge bg-success">Aanwezig</span></td></tr>
         <?php endif; ?>
-        <?php if (!empty($internet['contract_datum'])): ?>
-        <tr><td class="text-muted">Contract tot</td><td><?= h(date('d-m-Y', strtotime($internet['contract_datum']))) ?></td></tr>
+        <?php if (!empty($iv['contract_datum'])): ?>
+        <tr><td class="text-muted">Contract tot</td><td><?= h(date('d-m-Y', strtotime($iv['contract_datum']))) ?></td></tr>
         <?php endif; ?>
-        <?php if (!empty($internet['notities'])): ?>
-        <tr><td class="text-muted">Notities</td><td style="white-space:pre-line;"><?= h($internet['notities']) ?></td></tr>
+        <?php if (!empty($iv['notities'])): ?>
+        <tr><td class="text-muted align-top">Notities</td><td style="white-space:pre-line;"><?= h($iv['notities']) ?></td></tr>
         <?php endif; ?>
     </table>
-</div>
 
-<?php
-$heeft_pppoe = !empty($internet['pppoe_gebruiker'] ?? null) || $pppoe_wachtwoord !== '' || !empty($internet['vlan_id'] ?? null);
-if ($heeft_pppoe):
-?>
-<div class="bg-white rounded-3 border p-4 mt-3" style="max-width:600px;">
-    <h6 class="fw-bold mb-3"><i class="ri-key-2-line me-1 text-secondary"></i> PPPoE / VLAN</h6>
+    <?php if ($iv_heeft_pppoe): ?>
+    <hr class="my-3">
+    <div class="text-muted small fw-medium mb-2"><i class="ri-key-2-line me-1"></i>PPPoE / VLAN</div>
     <table class="table table-sm table-borderless mb-0">
-        <?php if (!empty($internet['pppoe_gebruiker'] ?? null)): ?>
+        <?php if (!empty($iv['pppoe_gebruiker'] ?? null)): ?>
         <tr><td class="text-muted" style="width:40%">PPPoE gebruiker</td>
             <td>
-                <code style="font-size:12px;"><?= h($internet['pppoe_gebruiker']) ?></code>
-                <button type="button" class="btn btn-sm btn-link p-0 ms-1" onclick="kopieer(<?= htmlspecialchars(json_encode($internet['pppoe_gebruiker']), ENT_QUOTES) ?>, this)" title="Kopiëren"><i class="ri-file-copy-line" style="font-size:14px;"></i></button>
+                <code style="font-size:12px;"><?= h($iv['pppoe_gebruiker']) ?></code>
+                <button type="button" class="btn btn-sm btn-link p-0 ms-1" onclick="kopieer(<?= htmlspecialchars(json_encode($iv['pppoe_gebruiker']), ENT_QUOTES) ?>, this)" title="Kopiëren"><i class="ri-file-copy-line" style="font-size:14px;"></i></button>
             </td>
         </tr>
         <?php endif; ?>
-        <?php if ($pppoe_wachtwoord !== ''): ?>
+        <?php if ($iv_pppoe_ww !== ''): ?>
         <tr><td class="text-muted">PPPoE wachtwoord</td>
             <td>
                 <div class="d-flex align-items-center gap-2">
-                    <code id="pppoe_ww_weergave" style="font-size:12px;">••••••••</code>
-                    <button type="button" class="btn btn-sm btn-link p-0" onclick="toonVsGeheim('pppoe_ww_weergave', <?= htmlspecialchars(json_encode($pppoe_wachtwoord), ENT_QUOTES) ?>, this)" title="Tonen"><i class="ri-eye-line" style="font-size:14px;"></i></button>
-                    <button type="button" class="btn btn-sm btn-link p-0" onclick="kopieer(<?= htmlspecialchars(json_encode($pppoe_wachtwoord), ENT_QUOTES) ?>, this)" title="Kopiëren"><i class="ri-file-copy-line" style="font-size:14px;"></i></button>
+                    <code id="pppoe_ww_weergave_<?= $iv_id ?>" style="font-size:12px;">••••••••</code>
+                    <button type="button" class="btn btn-sm btn-link p-0" onclick="toonVsGeheim('pppoe_ww_weergave_<?= $iv_id ?>', <?= htmlspecialchars(json_encode($iv_pppoe_ww), ENT_QUOTES) ?>, this)" title="Tonen"><i class="ri-eye-line" style="font-size:14px;"></i></button>
+                    <button type="button" class="btn btn-sm btn-link p-0" onclick="kopieer(<?= htmlspecialchars(json_encode($iv_pppoe_ww), ENT_QUOTES) ?>, this)" title="Kopiëren"><i class="ri-file-copy-line" style="font-size:14px;"></i></button>
                 </div>
             </td>
         </tr>
         <?php endif; ?>
-        <?php if (!empty($internet['vlan_id'] ?? null)): ?>
-        <tr><td class="text-muted">VLAN ID</td><td><code style="font-size:12px;"><?= (int)$internet['vlan_id'] ?></code></td></tr>
+        <?php if (!empty($iv['vlan_id'] ?? null)): ?>
+        <tr><td class="text-muted">VLAN ID</td><td><code style="font-size:12px;"><?= (int)$iv['vlan_id'] ?></code></td></tr>
         <?php endif; ?>
     </table>
+    <?php endif; ?>
 </div>
-<?php endif; ?>
+<?php endforeach; ?>
+</div>
 <?php endif; ?>
 
 <!-- Modal Internet -->
@@ -1727,62 +1788,73 @@ if ($heeft_pppoe):
     <div class="modal-dialog">
         <div class="modal-content rounded-3 border-0 shadow">
             <div class="modal-header border-0 pb-0 px-4 pt-4">
-                <h5 class="modal-title fw-bold">Internet aansluiting</h5>
+                <h5 class="modal-title fw-bold" id="internetModalTitel">Internet verbinding</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body p-4">
                 <form method="post" action="<?= $base ?>/internet/opslaan.php">
                     <?= csrf_field() ?>
                     <input type="hidden" name="klant_id" value="<?= $id ?>">
+                    <input type="hidden" name="internet_id" id="int_id" value="">
                     <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label fw-medium">Omschrijving <span class="text-muted fw-normal">(bijv. Hoofdkantoor, Werkplaats, Backup)</span></label>
+                            <input type="text" name="omschrijving" id="int_omschrijving" class="form-control rounded-3" placeholder="bijv. Hoofdvestiging glasvezel">
+                        </div>
                         <div class="col-12">
                             <label class="form-label fw-medium">Provider <span class="text-danger">*</span></label>
                             <select name="provider" id="int_provider" class="form-select rounded-3" required onchange="toggleAndersVeld()">
                                 <option value="">Selecteer provider...</option>
                                 <?php foreach (['Routit','Pocos','Delta','Eurofiber','Trined'] as $prov): ?>
-                                <option value="<?= $prov ?>" <?= ($internet['provider'] ?? '') === $prov ? 'selected' : '' ?>><?= $prov ?></option>
+                                <option value="<?= $prov ?>"><?= $prov ?></option>
                                 <?php endforeach; ?>
-                                <option value="Anders" <?= ($internet['provider'] ?? '') === 'Anders' ? 'selected' : '' ?>>Anders (zelf invullen)</option>
+                                <option value="Anders">Anders (zelf invullen)</option>
                             </select>
                         </div>
-                        <div class="col-12" id="anders_veld" style="display:<?= ($internet['provider'] ?? '') === 'Anders' ? 'block' : 'none' ?>;">
+                        <div class="col-12" id="anders_veld" style="display:none;">
                             <label class="form-label fw-medium">Provider naam</label>
-                            <input type="text" name="provider_anders" class="form-control rounded-3" placeholder="Naam van de provider" value="<?= h($internet['provider_anders'] ?? '') ?>">
+                            <input type="text" name="provider_anders" id="int_provider_anders" class="form-control rounded-3" placeholder="Naam van de provider">
                         </div>
                         <div class="col-12 col-md-6">
                             <label class="form-label fw-medium">Type verbinding</label>
-                            <select name="type" class="form-select rounded-3">
+                            <select name="type" id="int_type" class="form-select rounded-3">
                                 <option value="">Onbekend</option>
                                 <?php foreach (['Glasvezel','ADSL','VDSL'] as $t): ?>
-                                <option value="<?= h($t) ?>" <?= ($internet['type'] ?? '') === $t ? 'selected' : '' ?>><?= h($t) ?></option>
+                                <option value="<?= h($t) ?>"><?= h($t) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
                         <div class="col-6 col-md-3">
                             <label class="form-label fw-medium">Down (Mbit)</label>
-                            <input type="text" name="snelheid_down" class="form-control rounded-3" placeholder="100" value="<?= h($internet['snelheid_down'] ?? '') ?>">
+                            <input type="text" name="snelheid_down" id="int_down" class="form-control rounded-3" placeholder="100">
                         </div>
                         <div class="col-6 col-md-3">
                             <label class="form-label fw-medium">Up (Mbit)</label>
-                            <input type="text" name="snelheid_up" class="form-control rounded-3" placeholder="20" value="<?= h($internet['snelheid_up'] ?? '') ?>">
+                            <input type="text" name="snelheid_up" id="int_up" class="form-control rounded-3" placeholder="20">
                         </div>
-                        <div class="col-12">
+                        <div class="col-12 col-md-6">
                             <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" name="backup_4g" id="int_4g" <?= !empty($internet['backup_4g']) ? 'checked' : '' ?>>
+                                <input class="form-check-input" type="checkbox" name="backup_4g" id="int_4g">
                                 <label class="form-check-label fw-medium" for="int_4g">4G backup aanwezig</label>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="is_primair" id="int_primair">
+                                <label class="form-check-label fw-medium" for="int_primair">Primaire verbinding</label>
                             </div>
                         </div>
                         <div class="col-12">
                             <label class="form-label fw-medium">Vast IP-adres</label>
-                            <input type="text" name="ip_adres" class="form-control rounded-3 font-monospace" placeholder="Bijv. 85.144.xxx.xxx" value="<?= h($internet['ip_adres'] ?? '') ?>">
+                            <input type="text" name="ip_adres" id="int_ip" class="form-control rounded-3 font-monospace" placeholder="Bijv. 85.144.xxx.xxx">
                         </div>
                         <div class="col-12">
                             <label class="form-label fw-medium">Contract looptijd tot</label>
-                            <input type="date" name="contract_datum" class="form-control rounded-3" value="<?= h($internet['contract_datum'] ?? '') ?>">
+                            <input type="date" name="contract_datum" id="int_contract" class="form-control rounded-3">
                         </div>
                         <div class="col-12">
                             <label class="form-label fw-medium">Notities</label>
-                            <textarea name="notities" class="form-control rounded-3" rows="2"><?= h($internet['notities'] ?? '') ?></textarea>
+                            <textarea name="notities" id="int_notities" class="form-control rounded-3" rows="2"></textarea>
                         </div>
                         <div class="col-12">
                             <hr class="my-1">
@@ -1790,18 +1862,18 @@ if ($heeft_pppoe):
                         </div>
                         <div class="col-12 col-md-6">
                             <label class="form-label fw-medium">PPPoE gebruiker</label>
-                            <input type="text" name="pppoe_gebruiker" class="form-control rounded-3" placeholder="bijv. user@kpn-mobile.com" value="<?= h($internet['pppoe_gebruiker'] ?? '') ?>">
+                            <input type="text" name="pppoe_gebruiker" id="int_pppoe_user" class="form-control rounded-3" placeholder="bijv. user@kpn-mobile.com">
                         </div>
                         <div class="col-12 col-md-6">
                             <label class="form-label fw-medium">PPPoE wachtwoord</label>
                             <div class="input-group">
-                                <input type="password" name="pppoe_wachtwoord" id="int_pppoe_ww" class="form-control rounded-start-3" placeholder="<?= $pppoe_wachtwoord !== '' ? 'Laat leeg om ongewijzigd te laten' : '' ?>" autocomplete="new-password">
+                                <input type="password" name="pppoe_wachtwoord" id="int_pppoe_ww" class="form-control rounded-start-3" autocomplete="new-password">
                                 <button type="button" class="btn btn-outline-secondary" onclick="toggleVeld('int_pppoe_ww', this)"><i class="ri-eye-line"></i></button>
                             </div>
                         </div>
                         <div class="col-12 col-md-6">
                             <label class="form-label fw-medium">VLAN ID</label>
-                            <input type="number" min="1" max="4094" name="vlan_id" class="form-control rounded-3" placeholder="bijv. 6 (KPN glasvezel)" value="<?= h($internet['vlan_id'] ?? '') ?>">
+                            <input type="number" min="1" max="4094" name="vlan_id" id="int_vlan" class="form-control rounded-3" placeholder="bijv. 6 (KPN glasvezel)">
                         </div>
                     </div>
                     <div class="d-flex gap-2 mt-4">
@@ -1972,23 +2044,27 @@ function vsToonVelden() {
     document.getElementById('vs_anders_veld').style.display   = sel.value === 'anders' ? 'block' : 'none';
     document.getElementById('vs_uninstall_veld').style.display = sel.value === 'bitdefender' ? 'block' : 'none';
 }
-function toonVsGeheim(id, waarde, btn) {
-    var el = document.getElementById(id);
-    if (el.dataset.zichtbaar === '1') {
-        el.textContent = id === 'vs_lic_weergave' ? '••••••••••••••••' : '••••••••••••';
-        el.dataset.zichtbaar = '0';
-        btn.querySelector('i').className = 'ri-eye-line';
-    } else {
-        el.textContent = waarde;
-        el.dataset.zichtbaar = '1';
-        btn.querySelector('i').className = 'ri-eye-off-line';
-    }
-}
 </script>
 
 <?php endif; ?>
 
 <script>
+// ─── Geheim tonen/verbergen (wifi, pppoe, licentie, etc.) ────────────────────
+function toonVsGeheim(id, waarde, btn) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    if (el.dataset.zichtbaar === '1') {
+        el.textContent = el.dataset.masker || '••••••••';
+        el.dataset.zichtbaar = '0';
+        var ic1 = btn.querySelector('i'); if (ic1) ic1.className = 'ri-eye-line';
+    } else {
+        if (!el.dataset.masker) el.dataset.masker = el.textContent;
+        el.textContent = waarde;
+        el.dataset.zichtbaar = '1';
+        var ic2 = btn.querySelector('i'); if (ic2) ic2.className = 'ri-eye-off-line';
+    }
+}
+
 // ─── Contact bewerken ────────────────────────────────────────────────────────
 function bewerkContact(c) {
     document.getElementById('contactModalTitel').textContent = 'Contactpersoon bewerken';
@@ -2224,6 +2300,51 @@ function toggleAndersVeld() {
     var sel = document.getElementById('int_provider');
     var div = document.getElementById('anders_veld');
     div.style.display = sel.value === 'Anders' ? 'block' : 'none';
+}
+
+// ─── Internet verbinding bewerken ─────────────────────────────────────────────
+function nieuwInternet() {
+    document.getElementById('internetModalTitel').textContent = 'Internet verbinding toevoegen';
+    document.getElementById('int_id').value             = '';
+    document.getElementById('int_omschrijving').value   = '';
+    document.getElementById('int_provider').value       = '';
+    document.getElementById('int_provider_anders').value= '';
+    document.getElementById('int_type').value           = '';
+    document.getElementById('int_down').value           = '';
+    document.getElementById('int_up').value             = '';
+    document.getElementById('int_ip').value             = '';
+    document.getElementById('int_4g').checked           = false;
+    document.getElementById('int_primair').checked      = false;
+    document.getElementById('int_contract').value       = '';
+    document.getElementById('int_notities').value       = '';
+    document.getElementById('int_pppoe_user').value     = '';
+    document.getElementById('int_pppoe_ww').value       = '';
+    document.getElementById('int_pppoe_ww').placeholder = '';
+    document.getElementById('int_vlan').value           = '';
+    toggleAndersVeld();
+    new bootstrap.Modal(document.getElementById('modalInternet')).show();
+}
+
+function bewerkInternet(iv) {
+    document.getElementById('internetModalTitel').textContent = 'Internet verbinding bewerken';
+    document.getElementById('int_id').value             = iv.id;
+    document.getElementById('int_omschrijving').value   = iv.omschrijving || '';
+    document.getElementById('int_provider').value       = iv.provider || '';
+    document.getElementById('int_provider_anders').value= iv.provider_anders || '';
+    document.getElementById('int_type').value           = iv.type || '';
+    document.getElementById('int_down').value           = iv.snelheid_down || '';
+    document.getElementById('int_up').value             = iv.snelheid_up || '';
+    document.getElementById('int_ip').value             = iv.ip_adres || '';
+    document.getElementById('int_4g').checked           = !!iv.backup_4g;
+    document.getElementById('int_primair').checked      = !!iv.is_primair;
+    document.getElementById('int_contract').value       = iv.contract_datum || '';
+    document.getElementById('int_notities').value       = iv.notities || '';
+    document.getElementById('int_pppoe_user').value     = iv.pppoe_gebruiker || '';
+    document.getElementById('int_pppoe_ww').value       = '';
+    document.getElementById('int_pppoe_ww').placeholder = iv.heeft_pppoe_ww ? 'Laat leeg om ongewijzigd te laten' : '';
+    document.getElementById('int_vlan').value           = iv.vlan_id || '';
+    toggleAndersVeld();
+    new bootstrap.Modal(document.getElementById('modalInternet')).show();
 }
 
 // ─── Yeastar modal ────────────────────────────────────────────────────────────
